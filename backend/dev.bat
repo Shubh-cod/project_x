@@ -1,0 +1,3 @@
+@echo off
+echo Starting NovaCRM Backend in WSL...
+wsl bash -c "source venv/bin/activate && uvicorn app.main:app --reload"
