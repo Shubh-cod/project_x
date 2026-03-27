@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { StatCard } from "@/components/StatCard";
 import { Users, Target, DollarSign, CheckSquare, TrendingUp, Clock } from "lucide-react";
 import { dashboardApi } from "@/api/dashboard.api";
+import { ActivityFeed } from "@/components/ActivityFeed";
 
 export default function DashboardPage() {
   const { data: stats, isLoading, error } = useQuery({
@@ -41,55 +42,21 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard 
-          title="Total Contacts" 
-          value={summary.total_contacts.toLocaleString()} 
-          icon={Users} 
-          trend="Currently active"
-        />
-        <StatCard 
-          title="Open Leads" 
-          value={summary.open_leads} 
-          icon={Target} 
-          trend="Action required"
-        />
-        <StatCard 
-          title="Deals Won" 
-          value={summary.deals_won_this_month} 
-          icon={DollarSign} 
-          trend="This month"
-        />
-        <StatCard 
-          title="Tasks Due Today" 
-          value={summary.tasks_due_today} 
-          icon={CheckSquare} 
-        />
+        <StatCard title="Total Contacts" value={summary.total_contacts.toLocaleString()} icon={Users} trend="Currently active" />
+        <StatCard title="Open Leads" value={summary.open_leads} icon={Target} trend="Action required" />
+        <StatCard title="Deals Won" value={summary.deals_won_this_month} icon={DollarSign} trend="This month" />
+        <StatCard title="Tasks Due Today" value={summary.tasks_due_today} icon={CheckSquare} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity placeholder (Activity API not fully mapped to dashboard in backend spec yet) */}
+        {/* Recent Activities */}
         <div className="lg:col-span-2 bg-card rounded-lg border border-border">
           <div className="px-5 py-4 border-b border-border flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">Performance Overview</h2>
+            <h2 className="text-sm font-semibold text-foreground">Recent Activity</h2>
           </div>
           <div className="p-5">
-             <div className="space-y-4">
-                {stats?.agent_performance.map((agent: any) => (
-                  <div key={agent.user_id} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{agent.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{agent.leads_contacted} leads contacted</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">{agent.deals_won} won</p>
-                    </div>
-                  </div>
-                ))}
-                {(!stats?.agent_performance || stats.agent_performance.length === 0) && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No agent performance data yet.</p>
-                )}
-             </div>
+            <ActivityFeed limit={10} />
           </div>
         </div>
 

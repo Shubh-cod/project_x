@@ -4,21 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CheckCircle2, Circle, Clock } from "lucide-react";
 import { tasksApi } from "@/api/tasks.api";
-
-function isOverdue(dateStr: string, completed: boolean) {
-  return !completed && new Date(dateStr) < new Date();
-}
+import { useState } from "react";
+import { TaskDialog } from "@/components/dialogs/TaskDialog";
 
 export default function TasksPage() {
   const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: () => tasksApi.list(),
   });
 
   const toggleMutation = useMutation({
-    mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
-      tasksApi.update(id, { completed }),
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      tasksApi.update(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
@@ -35,8 +36,12 @@ export default function TasksPage() {
   }
 
   const tasks = data?.items || [];
-  const pending = tasks.filter((t) => !t.completed);
-  const completed = tasks.filter((t) => t.completed);
+  const pending = tasks.filter((t) => t.status !== "done");
+  const completed = tasks.filter((t) => t.status === "done");
+
+  function isOverdue(dateStr: string, status: string) {
+    return status !== "done" && new Date(dateStr) < new Date();
+  }
 
   return (
     <AppLayout>
@@ -45,7 +50,7 @@ export default function TasksPage() {
           <h1 className="text-2xl font-display font-bold text-foreground">Tasks</h1>
           <p className="text-sm text-muted-foreground mt-1">{pending.length} pending · {completed.length} completed</p>
         </div>
-        <Button>
+        <Button onClick={() => { setEditingTask(null); setDialogOpen(true); }}>
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
@@ -53,31 +58,39 @@ export default function TasksPage() {
 
       <div className="space-y-2">
         {tasks.map((task) => {
-          const overdue = task.due_date ? isOverdue(task.due_date, task.completed) : false;
+          const overdue = task.due_date ? isOverdue(task.due_date, task.status) : false;
+          const isDone = task.status === "done";
           return (
             <div
               key={task.id}
-              className={`bg-card rounded-lg border border-border px-5 py-3 flex items-center gap-4 hover:shadow-sm transition-shadow ${task.completed ? "opacity-60" : ""}`}
+              className={`bg-card rounded-lg border border-border px-5 py-3 flex items-center gap-4 hover:shadow-sm transition-shadow cursor-pointer ${isDone ? "opacity-60" : ""}`}
+              onClick={() => { setEditingTask(task); setDialogOpen(true); }}
             >
-              <button 
-                onClick={() => toggleMutation.mutate({ id: task.id, completed: !task.completed })}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMutation.mutate({ id: task.id, status: isDone ? "todo" : "done" });
+                }}
                 disabled={toggleMutation.isPending}
               >
-                {task.completed ? (
+                {isDone ? (
                   <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
                 ) : (
                   <Circle className="h-5 w-5 text-muted-foreground shrink-0 cursor-pointer hover:text-primary transition-colors" />
                 )}
               </button>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                <p className={`text-sm font-medium ${isDone ? "line-through text-muted-foreground" : "text-foreground"}`}>
                   {task.title}
                 </p>
-                {task.entity_type && (
-                  <span className="text-xs text-muted-foreground capitalize">
-                    Linked to {task.entity_type}
-                  </span>
-                )}
+                <div className="flex items-center gap-2 mt-0.5">
+                  {task.linked_to_type && (
+                    <span className="text-xs text-muted-foreground capitalize">
+                      Linked to {task.linked_to_type}
+                    </span>
+                  )}
+                  <Badge variant="secondary" className="text-xs capitalize">{task.priority}</Badge>
+                </div>
               </div>
               {task.due_date && (
                 <div className="flex items-center gap-1.5">
@@ -91,12 +104,14 @@ export default function TasksPage() {
             </div>
           );
         })}
-          {tasks.length === 0 && (
-            <div className="py-12 text-center text-muted-foreground">
-              No tasks found. Create one to get started!
-            </div>
-          )}
+        {tasks.length === 0 && (
+          <div className="py-12 text-center text-muted-foreground">
+            No tasks found. Create one to get started!
+          </div>
+        )}
       </div>
+
+      <TaskDialog open={dialogOpen} onOpenChange={setDialogOpen} task={editingTask} />
     </AppLayout>
   );
 }

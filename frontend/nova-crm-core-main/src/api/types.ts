@@ -7,8 +7,11 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  avatar_url?: string;
   role?: string;
+  is_active?: boolean;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Contact {
@@ -65,12 +68,9 @@ export interface Task {
   title: string;
   description?: string;
   due_date?: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  status: "pending" | "in_progress" | "completed" | "deferred";
-  completed: boolean;
-  entity_type?: "contact" | "lead" | "deal";
-  entity_id?: string;
-  linked_to_type?: string; // Supporting both naming conventions for compatibility
+  priority: string;
+  status: string;
+  linked_to_type?: string;
   linked_to_id?: string;
   assigned_to?: string;
   created_at: string;
@@ -85,6 +85,34 @@ export interface Note {
   created_by?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailLog {
+  id: string;
+  subject: string;
+  body_preview?: string;
+  sent_at: string;
+  contact_id: string;
+  sent_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Activity {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  user_id?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
 }
 
 export interface DashboardStats {
@@ -118,4 +146,12 @@ export interface SearchResults {
   contacts: SearchResultItem[];
   leads: SearchResultItem[];
   deals: SearchResultItem[];
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
 }

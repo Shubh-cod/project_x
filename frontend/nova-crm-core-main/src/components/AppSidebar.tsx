@@ -1,14 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   Target,
   DollarSign,
   CheckSquare,
+  Activity,
   LogOut,
 } from "lucide-react";
-import { api } from "@/lib/api";
-import { useNavigate } from "react-router-dom";
+import { authApi } from "@/api/auth.api";
+import { client } from "@/api/client";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -16,6 +17,7 @@ const navItems = [
   { to: "/leads", icon: Target, label: "Leads" },
   { to: "/deals", icon: DollarSign, label: "Deals" },
   { to: "/tasks", icon: CheckSquare, label: "Tasks" },
+  { to: "/activities", icon: Activity, label: "Activities" },
 ];
 
 export function AppSidebar() {
@@ -24,11 +26,11 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      await api.logout();
+      await authApi.logout();
     } catch {
       // ignore
     }
-    api.clearTokens();
+    client.clearTokens();
     navigate("/login");
   };
 

@@ -1,20 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Mail, Phone } from "lucide-react";
+import { Plus, Search, Mail, Phone, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { contactsApi } from "@/api/contacts.api";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ContactDialog } from "@/components/dialogs/ContactDialog";
 
 export default function ContactsPage() {
   const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<any>(null);
   const debouncedSearch = useDebounce(search, 300);
-  
-  const { data, isLoading, error } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
     queryKey: ["contacts", debouncedSearch],
     queryFn: () => contactsApi.list({ name: debouncedSearch || undefined }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => contactsApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts"] }),
   });
 
   if (isLoading) {
@@ -37,24 +46,17 @@ export default function ContactsPage() {
           <h1 className="text-2xl font-display font-bold text-foreground">Contacts</h1>
           <p className="text-sm text-muted-foreground mt-1">{total} total contacts</p>
         </div>
-        <Button>
+        <Button onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
           <Plus className="h-4 w-4 mr-2" />
           Add Contact
         </Button>
       </div>
 
-      {/* Search */}
       <div className="relative max-w-sm mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Search contacts..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="pl-9" 
-        />
+        <Input placeholder="Search contacts..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      {/* Table */}
       <div className="bg-card rounded-lg border border-border overflow-hidden">
         <table className="w-full">
           <thead>
@@ -64,11 +66,12 @@ export default function ContactsPage() {
               <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
               <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tags</th>
               <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added</th>
+              <th className="px-5 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {contacts.map((c) => (
-              <tr key={c.id} className="hover:bg-secondary/30 transition-colors cursor-pointer">
+              <tr key={c.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => { setEditingContact(c); setDialogOpen(true); }}>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
@@ -100,11 +103,20 @@ export default function ContactsPage() {
                 <td className="px-5 py-3 text-xs text-muted-foreground">
                   {new Date(c.created_at).toLocaleDateString()}
                 </td>
+                <td className="px-5 py-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(c.id); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </td>
               </tr>
             ))}
             {contacts.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">
                   No contacts found.
                 </td>
               </tr>
@@ -112,6 +124,8 @@ export default function ContactsPage() {
           </tbody>
         </table>
       </div>
+
+      <ContactDialog open={dialogOpen} onOpenChange={setDialogOpen} contact={editingContact} />
     </AppLayout>
   );
 }
