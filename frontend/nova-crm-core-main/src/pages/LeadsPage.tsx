@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, ArrowRight } from "lucide-react";
 import { leadsApi } from "@/api/leads.api";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LeadDialog } from "@/components/dialogs/LeadDialog";
 import { LeadConvertDialog } from "@/components/dialogs/LeadConvertDialog";
 
@@ -22,6 +23,8 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function LeadsPage() {
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<any>(null);
   const [convertLeadId, setConvertLeadId] = useState<string | null>(null);
@@ -71,7 +74,7 @@ export default function LeadsPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {leads.map((lead) => (
-              <tr key={lead.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => { setEditingLead(lead); setDialogOpen(true); }}>
+              <tr key={lead.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => navigate(`/leads/${lead.id}`)}>
                 <td className="px-5 py-3 text-sm font-medium text-foreground">{lead.title}</td>
                 <td className="px-5 py-3">
                   <Badge variant="secondary" className={`${statusColors[lead.status]} border-none text-xs capitalize`}>

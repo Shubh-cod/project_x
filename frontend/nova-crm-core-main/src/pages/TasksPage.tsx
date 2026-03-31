@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,10 @@ export default function TasksPage() {
       tasksApi.update(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success("Task status updated");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update task");
     },
   });
 

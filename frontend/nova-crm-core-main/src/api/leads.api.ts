@@ -2,8 +2,13 @@ import { client } from "./client";
 import { Lead } from "./types";
 
 export const leadsApi = {
-  list: (params?: any) => {
-    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+  list: (params?: Record<string, any>) => {
+    const filtered = params
+      ? Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && v !== ""))
+      : null;
+    const qs = filtered && Object.keys(filtered).length
+      ? "?" + new URLSearchParams(filtered as Record<string, string>).toString()
+      : "";
     return client.request<{ items: Lead[]; total: number; page: number; pages: number }>(`/leads${qs}`);
   },
 

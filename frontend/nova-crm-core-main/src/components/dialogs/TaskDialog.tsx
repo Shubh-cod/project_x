@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tasksApi } from "@/api/tasks.api";
+import { ContactPicker } from "@/components/ContactPicker";
 import type { Task } from "@/api/types";
 
 interface TaskDialogProps {
@@ -26,12 +28,30 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
     linked_to_id: task?.linked_to_id || "",
   });
 
+  useEffect(() => {
+    if (open) {
+      setForm({
+        title: task?.title || "",
+        description: task?.description || "",
+        due_date: task?.due_date ? task.due_date.split("T")[0] : "",
+        priority: task?.priority || "medium",
+        status: task?.status || "todo",
+        linked_to_type: task?.linked_to_type || "",
+        linked_to_id: task?.linked_to_id || "",
+      });
+    }
+  }, [open, task]);
+
   const mutation = useMutation({
     mutationFn: (data: any) =>
       isEditing ? tasksApi.update(task!.id, data) : tasksApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success(isEditing ? "Task updated" : "Task created");
       onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to save task");
     },
   });
 
@@ -96,16 +116,22 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium mb-1 block">Linked Entity</label>
-              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.linked_to_type} onChange={(e) => update("linked_to_type", e.target.value)}>
+              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.linked_to_type} onChange={(e) => { update("linked_to_type", e.target.value); update("linked_to_id", ""); }}>
                 <option value="">None</option>
                 <option value="contact">Contact</option>
                 <option value="lead">Lead</option>
                 <option value="deal">Deal</option>
               </select>
             </div>
-            {form.linked_to_type && (
+            {form.linked_to_type === "contact" && (
               <div>
-                <label className="text-sm font-medium mb-1 block">Entity ID</label>
+                <label className="text-sm font-medium mb-1 block">Contact</label>
+                <ContactPicker value={form.linked_to_id} onChange={(id) => update("linked_to_id", id)} />
+              </div>
+            )}
+            {form.linked_to_type && form.linked_to_type !== "contact" && (
+              <div>
+                <label className="text-sm font-medium mb-1 block">{form.linked_to_type === "lead" ? "Lead" : "Deal"} ID</label>
                 <Input value={form.linked_to_id} onChange={(e) => update("linked_to_id", e.target.value)} placeholder="UUID" />
               </div>
             )}

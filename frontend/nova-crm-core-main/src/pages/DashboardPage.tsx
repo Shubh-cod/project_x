@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { StatCard } from "@/components/StatCard";
-import { Users, Target, DollarSign, CheckSquare, TrendingUp, Clock } from "lucide-react";
+import { Users, Target, DollarSign, CheckSquare, TrendingUp, Clock, Medal } from "lucide-react";
 import { dashboardApi } from "@/api/dashboard.api";
 import { ActivityFeed } from "@/components/ActivityFeed";
 
@@ -60,8 +60,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Pipeline Summary */}
-        <div className="bg-card rounded-lg border border-border">
+        {/* Right Column: Pipeline & Performance */}
+        <div className="space-y-6">
+          <div className="bg-card rounded-lg border border-border flex flex-col h-full">
           <div className="px-5 py-4 border-b border-border flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">Pipeline Summary</h2>
@@ -85,6 +86,39 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">No deals in pipeline.</p>
             )}
           </div>
+        </div>
+
+        {/* Agent Performance */}
+        <div className="bg-card rounded-lg border border-border">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+            <Medal className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Agent Performance</h2>
+          </div>
+          <div className="p-5">
+            <div className="space-y-4">
+              {stats.agent_performance.map((agent) => (
+                <div key={agent.user_id} className="flex items-center justify-between border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                      {agent.full_name.split(" ").map((n) => n[0]).join("")}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground">{agent.full_name}</h4>
+                      <p className="text-xs text-muted-foreground">{agent.leads_contacted} leads contacted</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-foreground">{agent.deals_won}</span>
+                    <p className="text-xs text-muted-foreground">deals won</p>
+                  </div>
+                </div>
+              ))}
+              {stats.agent_performance.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No performance data yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </AppLayout>

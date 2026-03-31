@@ -92,3 +92,14 @@ async def test_delete_contact(client: AsyncClient, auth_headers):
     assert r.status_code == 200
     r2 = await client.get(f"/api/v1/contacts/{cid}", headers=auth_headers)
     assert r2.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_contacts_require_auth(client: AsyncClient):
+    """All contact endpoints must reject unauthenticated requests with 401."""
+    r = await client.get("/api/v1/contacts")
+    assert r.status_code == 401
+
+    r = await client.post("/api/v1/contacts", json={"name": "No Auth"})
+    assert r.status_code == 401
+

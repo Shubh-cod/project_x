@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { dealsApi } from "@/api/deals.api";
+import { ContactPicker } from "@/components/ContactPicker";
 import type { Deal } from "@/api/types";
 
 interface DealDialogProps {
@@ -27,6 +29,21 @@ export function DealDialog({ open, onOpenChange, deal }: DealDialogProps) {
     notes: deal?.notes || "",
   });
 
+  useEffect(() => {
+    if (open) {
+      setForm({
+        title: deal?.title || "",
+        contact_id: deal?.contact_id || "",
+        stage: deal?.stage || "prospect",
+        value: deal?.value?.toString() || "0",
+        currency: deal?.currency || "USD",
+        close_date: deal?.close_date || "",
+        probability: deal?.probability?.toString() || "",
+        notes: deal?.notes || "",
+      });
+    }
+  }, [open, deal]);
+
   const mutation = useMutation({
     mutationFn: (data: any) =>
       isEditing ? dealsApi.update(deal!.id, data) : dealsApi.create(data),
@@ -34,7 +51,11 @@ export function DealDialog({ open, onOpenChange, deal }: DealDialogProps) {
       queryClient.invalidateQueries({ queryKey: ["deals"] });
       queryClient.invalidateQueries({ queryKey: ["deals-pipeline"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success(isEditing ? "Deal updated" : "Deal created");
       onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to save deal");
     },
   });
 
@@ -62,8 +83,8 @@ export function DealDialog({ open, onOpenChange, deal }: DealDialogProps) {
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} required />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Contact ID *</label>
-            <Input value={form.contact_id} onChange={(e) => update("contact_id", e.target.value)} required placeholder="UUID" />
+            <label className="text-sm font-medium mb-1 block">Contact *</label>
+            <ContactPicker value={form.contact_id} onChange={(id) => update("contact_id", id)} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>

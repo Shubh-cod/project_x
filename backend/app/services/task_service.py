@@ -26,10 +26,11 @@ async def create(
         status=data.status,
         linked_to_type=data.linked_to_type,
         linked_to_id=data.linked_to_id,
-        assigned_to=data.assigned_to,
+        assigned_to=data.assigned_to or user_id,  # default to creating user
     )
     session.add(task)
     await session.flush()
+    await activity_log(session, "task", task.id, "created", user_id, {"title": data.title})
     await session.refresh(task)
     return task
 

@@ -40,7 +40,7 @@ async def create(
     await session.flush()
     if data.tags:
         await _set_lead_tags(session, lead.id, data.tags)
-    await activity_log(session, "lead", lead.id, "created", user_id)
+    await activity_log(session, "lead", lead.id, "created", user_id, {"entity_name": lead.title})
     await invalidate_search_cache()
     await session.refresh(lead)
     return lead
@@ -56,6 +56,7 @@ async def get_by_id(session: AsyncSession, lead_id: UUID) -> Lead | None:
 async def list_leads(
     session: AsyncSession,
     status: Optional[str] = None,
+    contact_id: Optional[UUID] = None,
     assigned_to: Optional[UUID] = None,
     priority: Optional[str] = None,
     date_from: Optional[datetime] = None,
@@ -66,6 +67,8 @@ async def list_leads(
     q = select(Lead).options(selectinload(Lead.tags)).order_by(Lead.created_at.desc())
     if status:
         q = q.where(Lead.status == status)
+    if contact_id:
+        q = q.where(Lead.contact_id == contact_id)
     if assigned_to:
         q = q.where(Lead.assigned_to == assigned_to)
     if priority:
@@ -109,9 +112,9 @@ async def update(
     await invalidate_search_cache()
     await session.flush()
     if data.status is not None and data.status != old_status:
-        await activity_log(session, "lead", lead.id, "status_changed", user_id, {"old": old_status, "new": data.status})
+        await activity_log(session, "lead", lead.id, "status_changed", user_id, {"old": old_status, "new": data.status, "entity_name": lead.title})
     else:
-        await activity_log(session, "lead", lead.id, "updated", user_id)
+        await activity_log(session, "lead", lead.id, "updated", user_id, {"entity_name": lead.title})
     await session.refresh(lead)
     return lead
 

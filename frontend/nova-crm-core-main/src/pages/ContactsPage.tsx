@@ -1,16 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Mail, Phone, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { contactsApi } from "@/api/contacts.api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ContactDialog } from "@/components/dialogs/ContactDialog";
 
 export default function ContactsPage() {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<any>(null);
   const debouncedSearch = useDebounce(search, 300);
@@ -23,7 +26,13 @@ export default function ContactsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => contactsApi.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contacts"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast.success("Contact deleted");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete contact");
+    },
   });
 
   if (isLoading) {
@@ -71,7 +80,7 @@ export default function ContactsPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {contacts.map((c) => (
-              <tr key={c.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => { setEditingContact(c); setDialogOpen(true); }}>
+              <tr key={c.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => navigate(`/contacts/${c.id}`)}>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">

@@ -7,8 +7,11 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
 import ContactsPage from "./pages/ContactsPage";
+import ContactDetailPage from "./pages/ContactDetailPage";
 import LeadsPage from "./pages/LeadsPage";
+import LeadDetailPage from "./pages/LeadDetailPage";
 import DealsPage from "./pages/DealsPage";
+import DealDetailPage from "./pages/DealDetailPage";
 import TasksPage from "./pages/TasksPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import LoginPage from "./pages/LoginPage";
@@ -27,8 +30,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
+            <Route path="/contacts/:id" element={<ProtectedRoute><ContactDetailPage /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+            <Route path="/leads/:id" element={<ProtectedRoute><LeadDetailPage /></ProtectedRoute>} />
             <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
+            <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/activities" element={<ProtectedRoute><ActivitiesPage /></ProtectedRoute>} />
             <Route path="/login" element={<LoginPage />} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,11 @@ export function LeadConvertDialog({ open, onOpenChange, leadId }: LeadConvertDia
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       queryClient.invalidateQueries({ queryKey: ["deals"] });
+      toast.success("Lead converted successfully");
       onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to convert lead");
     },
   });
 

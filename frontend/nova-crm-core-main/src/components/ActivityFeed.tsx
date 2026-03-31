@@ -46,7 +46,13 @@ export function ActivityFeed({ entityType, entityId, limit = 10 }: ActivityFeedP
             <p className="text-sm text-foreground">
               <span className="font-medium capitalize">{a.action}</span>
               {" on "}
-              <span className="text-muted-foreground capitalize">{a.entity_type}</span>
+              <span className="text-muted-foreground">
+                {a.metadata?.entity_name ? (
+                  <span className="font-semibold">{a.metadata.entity_name}</span>
+                ) : (
+                  <span className="capitalize">{a.entity_type}</span>
+                )}
+              </span>
             </p>
             <p className="text-xs text-muted-foreground">
               {new Date(a.created_at).toLocaleString()}

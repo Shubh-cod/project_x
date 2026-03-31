@@ -35,7 +35,7 @@ async def create(
     await session.flush()
     if data.tags:
         await _set_contact_tags(session, contact.id, data.tags)
-    await activity_log(session, "contact", contact.id, "created", user_id)
+    await activity_log(session, "contact", contact.id, "created", user_id, {"entity_name": contact.name})
     await invalidate_search_cache()
     await session.refresh(contact)
     return contact
@@ -103,7 +103,7 @@ async def update(
         contact.assigned_to = data.assigned_to
     if data.tags is not None:
         await _set_contact_tags(session, contact.id, data.tags)
-    await activity_log(session, "contact", contact.id, "updated", user_id)
+    await activity_log(session, "contact", contact.id, "updated", user_id, {"entity_name": contact.name})
     await invalidate_search_cache()
     await session.flush()
     await session.refresh(contact)

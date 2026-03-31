@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, DollarSign } from "lucide-react";
+import { Plus, DollarSign, GripVertical } from "lucide-react";
 import { dealsApi } from "@/api/deals.api";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { DealDialog } from "@/components/dialogs/DealDialog";
 
@@ -19,6 +20,8 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 export default function DealsPage() {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<any>(null);
 
@@ -85,7 +88,7 @@ export default function DealsPage() {
               {stage.deals.map((deal: any) => (
                 <div
                   key={deal.id}
-                  onClick={() => { setEditingDeal(deal); setDialogOpen(true); }}
+                  onClick={() => navigate(`/deals/${deal.id}`)}
                   className="p-3 bg-secondary/30 rounded-md cursor-pointer hover:bg-secondary/60 transition-colors"
                 >
                   <p className="text-sm font-medium text-foreground truncate">{deal.title}</p>

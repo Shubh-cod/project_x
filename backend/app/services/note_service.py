@@ -25,7 +25,22 @@ async def create(
     )
     session.add(note)
     await session.flush()
-    await activity_log(session, data.entity_type, data.entity_id, "note_added", user_id, {"note_id": str(note.id)})
+    # Fetch entity name for activity log
+    entity_name = None
+    if data.entity_type == "contact":
+        from app.models.contact import Contact
+        r = await session.execute(select(Contact).where(Contact.id == data.entity_id))
+        entity_name = getattr(r.scalar_one_or_none(), "name", None)
+    elif data.entity_type == "lead":
+        from app.models.lead import Lead
+        r = await session.execute(select(Lead).where(Lead.id == data.entity_id))
+        entity_name = getattr(r.scalar_one_or_none(), "title", None)
+    elif data.entity_type == "deal":
+        from app.models.deal import Deal
+        r = await session.execute(select(Deal).where(Deal.id == data.entity_id))
+        entity_name = getattr(r.scalar_one_or_none(), "title", None)
+
+    await activity_log(session, data.entity_type, data.entity_id, "note_added", user_id, {"note_id": str(note.id), "entity_name": entity_name})
     await session.refresh(note)
     return note
 

@@ -56,3 +56,5 @@ Thumbs.db
 backend/data/
 backend/dump.rdb
 .pytest_cache/
+.agent
+artifacts

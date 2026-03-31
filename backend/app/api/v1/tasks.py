@@ -29,7 +29,7 @@ async def list_tasks(
 ):
     items, total = await task_service.list_tasks(
         db,
-        assigned_to=assigned_to or current_user.id,
+        assigned_to=assigned_to,
         status=status,
         linked_to_type=linked_to_type,
         linked_to_id=linked_to_id,

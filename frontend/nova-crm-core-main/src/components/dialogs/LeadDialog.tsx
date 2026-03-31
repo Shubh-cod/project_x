@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { leadsApi } from "@/api/leads.api";
+import { ContactPicker } from "@/components/ContactPicker";
 import type { Lead } from "@/api/types";
 
 interface LeadDialogProps {
@@ -26,12 +28,30 @@ export function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps) {
     notes: lead?.notes || "",
   });
 
+  useEffect(() => {
+    if (open) {
+      setForm({
+        title: lead?.title || "",
+        contact_id: lead?.contact_id || "",
+        source: lead?.source || "other",
+        status: lead?.status || "new",
+        priority: lead?.priority || "medium",
+        estimated_value: lead?.estimated_value?.toString() || "",
+        notes: lead?.notes || "",
+      });
+    }
+  }, [open, lead]);
+
   const mutation = useMutation({
     mutationFn: (data: any) =>
       isEditing ? leadsApi.update(lead!.id, data) : leadsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success(isEditing ? "Lead updated" : "Lead created");
       onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to save lead");
     },
   });
 
@@ -57,8 +77,8 @@ export function LeadDialog({ open, onOpenChange, lead }: LeadDialogProps) {
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} required />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Contact ID *</label>
-            <Input value={form.contact_id} onChange={(e) => update("contact_id", e.target.value)} required placeholder="UUID of the contact" />
+            <label className="text-sm font-medium mb-1 block">Contact *</label>
+            <ContactPicker value={form.contact_id} onChange={(id) => update("contact_id", id)} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>

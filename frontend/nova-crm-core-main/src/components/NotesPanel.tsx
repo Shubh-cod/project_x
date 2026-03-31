@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notesApi } from "@/api/notes.api";
 import { Button } from "@/components/ui/button";
@@ -23,12 +24,22 @@ export function NotesPanel({ entityType, entityId }: NotesPanelProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes", entityType, entityId] });
       setContent("");
+      toast.success("Note added");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add note");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => notesApi.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes", entityType, entityId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes", entityType, entityId] });
+      toast.success("Note deleted");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete note");
+    },
   });
 
   const notes = data?.items || [];

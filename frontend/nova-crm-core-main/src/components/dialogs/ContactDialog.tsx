@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,11 @@ export function ContactDialog({ open, onOpenChange, contact }: ContactDialogProp
       isEditing ? contactsApi.update(contact!.id, data) : contactsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast.success(isEditing ? "Contact updated" : "Contact created");
       onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to save contact");
     },
   });
 

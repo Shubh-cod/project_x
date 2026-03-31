@@ -39,6 +39,7 @@ async def list_leads(
     db: DBSession,
     current_user: CurrentUser,
     status: str | None = None,
+    contact_id: UUID | None = None,
     assigned_to: UUID | None = None,
     priority: str | None = None,
     date_from: str | None = None,
@@ -50,6 +51,7 @@ async def list_leads(
     items, total = await lead_service.list_leads(
         db,
         status=status,
+        contact_id=contact_id,
         assigned_to=assigned_to,
         priority=priority,
         date_from=datetime.fromisoformat(date_from.replace("Z", "+00:00")) if date_from else None,

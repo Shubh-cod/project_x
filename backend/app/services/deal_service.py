@@ -31,7 +31,7 @@ async def create(
     )
     session.add(deal)
     await session.flush()
-    await activity_log(session, "deal", deal.id, "created", user_id)
+    await activity_log(session, "deal", deal.id, "created", user_id, {"entity_name": deal.title})
     await invalidate_search_cache()
     await session.refresh(deal)
     return deal
@@ -97,9 +97,9 @@ async def update(
     await invalidate_search_cache()
     await session.flush()
     if data.stage is not None and data.stage != old_stage:
-        await activity_log(session, "deal", deal.id, "status_changed", user_id, {"old": old_stage, "new": data.stage})
+        await activity_log(session, "deal", deal.id, "status_changed", user_id, {"old": old_stage, "new": data.stage, "entity_name": deal.title})
     else:
-        await activity_log(session, "deal", deal.id, "updated", user_id)
+        await activity_log(session, "deal", deal.id, "updated", user_id, {"entity_name": deal.title})
     await session.refresh(deal)
     return deal
 
