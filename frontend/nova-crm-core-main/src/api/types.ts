@@ -155,3 +155,17 @@ export interface PaginatedResponse<T> {
   page_size: number;
   pages: number;
 }
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  trigger_event: string;
+  conditions?: Record<string, any> | null;
+  action_type: string;
+  action_config?: Record<string, any> | null;
+  is_active: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+

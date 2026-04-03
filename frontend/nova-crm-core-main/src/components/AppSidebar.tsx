@@ -6,6 +6,7 @@ import {
   DollarSign,
   CheckSquare,
   Activity,
+  Zap,
   LogOut,
 } from "lucide-react";
 import { authApi } from "@/api/auth.api";
@@ -18,6 +19,7 @@ const navItems = [
   { to: "/deals", icon: DollarSign, label: "Deals" },
   { to: "/tasks", icon: CheckSquare, label: "Tasks" },
   { to: "/activities", icon: Activity, label: "Activities" },
+  { to: "/automation", icon: Zap, label: "Automation" },
 ];
 
 export function AppSidebar() {

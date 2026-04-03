@@ -19,12 +19,13 @@ export default function DealDetailPage() {
 
   const { data: deal, isLoading: dealLoading } = useQuery({
     queryKey: ["deals", id],
-    queryFn: () => dealsApi.list({}).then(res => res.items.find(d => d.id === id)), // workaround
+    queryFn: () => dealsApi.get(id!),
+    enabled: !!id,
   });
 
   const { data: contact } = useQuery({
     queryKey: ["contacts", deal?.contact_id],
-    queryFn: () => contactsApi.list({ name: "" }).then(res => res.items.find(c => c.id === deal!.contact_id)),
+    queryFn: () => contactsApi.get(deal!.contact_id),
     enabled: !!deal?.contact_id,
   });
 

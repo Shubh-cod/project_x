@@ -22,12 +22,13 @@ export default function LeadDetailPage() {
 
   const { data: lead, isLoading: leadLoading } = useQuery({
     queryKey: ["leads", id],
-    queryFn: () => leadsApi.list({}).then(res => res.items.find(l => l.id === id)), // workaround
+    queryFn: () => leadsApi.get(id!),
+    enabled: !!id,
   });
 
   const { data: contact } = useQuery({
     queryKey: ["contacts", lead?.contact_id],
-    queryFn: () => contactsApi.list({ name: "" }).then(res => res.items.find(c => c.id === lead!.contact_id)),
+    queryFn: () => contactsApi.get(lead!.contact_id),
     enabled: !!lead?.contact_id,
   });
 

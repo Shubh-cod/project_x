@@ -14,6 +14,7 @@ import DealsPage from "./pages/DealsPage";
 import DealDetailPage from "./pages/DealDetailPage";
 import TasksPage from "./pages/TasksPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
+import AutomationPage from "./pages/AutomationPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/activities" element={<ProtectedRoute><ActivitiesPage /></ProtectedRoute>} />
+            <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="*" element={<NotFound />} />

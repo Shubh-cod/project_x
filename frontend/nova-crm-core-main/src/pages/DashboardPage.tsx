@@ -14,8 +14,49 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="mb-6">
+          <div className="h-7 w-32 bg-secondary rounded animate-pulse" />
+          <div className="h-4 w-56 bg-secondary/60 rounded animate-pulse mt-2" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-card rounded-lg border border-border p-5 animate-pulse">
+              <div className="h-3 w-24 bg-secondary rounded mb-3" />
+              <div className="h-8 w-16 bg-secondary rounded mb-2" />
+              <div className="h-3 w-20 bg-secondary/60 rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-card rounded-lg border border-border">
+            <div className="px-5 py-4 border-b border-border">
+              <div className="h-4 w-28 bg-secondary rounded animate-pulse" />
+            </div>
+            <div className="p-5 space-y-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex items-start gap-3 animate-pulse">
+                  <div className="h-6 w-6 rounded-full bg-secondary shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-48 bg-secondary rounded" />
+                    <div className="h-3 w-32 bg-secondary/60 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-card rounded-lg border border-border animate-pulse">
+            <div className="px-5 py-4 border-b border-border">
+              <div className="h-4 w-32 bg-secondary rounded" />
+            </div>
+            <div className="p-5 space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i}>
+                  <div className="h-3 w-20 bg-secondary rounded mb-2" />
+                  <div className="h-2 rounded-full bg-secondary" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </AppLayout>
     );

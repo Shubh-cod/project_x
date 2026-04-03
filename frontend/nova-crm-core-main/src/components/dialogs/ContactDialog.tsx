@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,6 +26,20 @@ export function ContactDialog({ open, onOpenChange, contact }: ContactDialogProp
     source: contact?.source || "",
     notes: contact?.notes || "",
   });
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        name: contact?.name || "",
+        email: contact?.email || "",
+        phone: contact?.phone || "",
+        company: contact?.company || "",
+        address: contact?.address || "",
+        source: contact?.source || "",
+        notes: contact?.notes || "",
+      });
+    }
+  }, [open, contact]);
 
   const mutation = useMutation({
     mutationFn: (data: typeof form) =>

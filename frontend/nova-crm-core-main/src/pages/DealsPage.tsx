@@ -38,8 +38,27 @@ export default function DealsPage() {
   if (pipelineLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="mb-6">
+          <div className="h-7 w-36 bg-secondary rounded animate-pulse" />
+          <div className="h-4 w-56 bg-secondary/60 rounded animate-pulse mt-2" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="bg-card rounded-lg border border-border border-t-4 border-t-secondary animate-pulse">
+              <div className="px-4 py-3 border-b border-border">
+                <div className="h-4 w-20 bg-secondary rounded mb-1" />
+                <div className="h-3 w-16 bg-secondary/60 rounded" />
+              </div>
+              <div className="p-3 space-y-2">
+                {[1, 2].map(j => (
+                  <div key={j} className="p-3 bg-secondary/30 rounded-md">
+                    <div className="h-4 w-24 bg-secondary rounded mb-2" />
+                    <div className="h-3 w-16 bg-secondary/60 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </AppLayout>
     );
@@ -110,8 +129,13 @@ export default function DealsPage() {
           </div>
         ))}
         {stages.length === 0 && (
-          <div className="col-span-full py-12 text-center text-muted-foreground">
-            No deals currently in the pipeline.
+          <div className="col-span-full py-16 text-center border rounded-lg border-dashed bg-secondary/10">
+            <DollarSign className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-semibold text-foreground">No deals in the pipeline</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">Create your first deal to visualize your sales pipeline.</p>
+            <Button size="sm" onClick={() => { setEditingDeal(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />New Deal
+            </Button>
           </div>
         )}
       </div>

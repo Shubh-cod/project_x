@@ -33,8 +33,21 @@ export default function TasksPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="mb-6">
+          <div className="h-7 w-20 bg-secondary rounded animate-pulse" />
+          <div className="h-4 w-40 bg-secondary/60 rounded animate-pulse mt-2" />
+        </div>
+        <div className="space-y-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-card rounded-lg border border-border px-5 py-3 flex items-center gap-4 animate-pulse">
+              <div className="h-5 w-5 rounded-full bg-secondary" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-48 bg-secondary rounded" />
+                <div className="h-3 w-24 bg-secondary/60 rounded" />
+              </div>
+              <div className="h-3 w-20 bg-secondary/60 rounded" />
+            </div>
+          ))}
         </div>
       </AppLayout>
     );
@@ -110,8 +123,13 @@ export default function TasksPage() {
           );
         })}
         {tasks.length === 0 && (
-          <div className="py-12 text-center text-muted-foreground">
-            No tasks found. Create one to get started!
+          <div className="py-16 text-center border rounded-lg border-dashed bg-secondary/10">
+            <CheckCircle2 className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-semibold text-foreground">No tasks yet</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">Create a task to stay on top of your follow-ups.</p>
+            <Button size="sm" onClick={() => { setEditingTask(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />New Task
+            </Button>
           </div>
         )}
       </div>

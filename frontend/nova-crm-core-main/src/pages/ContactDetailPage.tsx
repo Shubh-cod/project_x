@@ -20,7 +20,8 @@ export default function ContactDetailPage() {
 
   const { data: contact, isLoading } = useQuery({
     queryKey: ["contacts", id],
-    queryFn: () => contactsApi.list({ name: "" }).then(res => res.items.find(c => c.id === id)), // temporary workaround for lack of getById
+    queryFn: () => contactsApi.get(id!),
+    enabled: !!id,
   });
 
   const { data: leads } = useQuery({

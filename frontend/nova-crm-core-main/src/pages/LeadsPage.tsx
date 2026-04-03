@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowRight } from "lucide-react";
+import { Plus, ArrowRight, Target } from "lucide-react";
 import { leadsApi } from "@/api/leads.api";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -37,8 +37,23 @@ export default function LeadsPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="mb-6">
+          <div className="h-7 w-24 bg-secondary rounded animate-pulse" />
+          <div className="h-4 w-56 bg-secondary/60 rounded animate-pulse mt-2" />
+        </div>
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="border-b border-border bg-secondary/50 px-5 py-3 flex gap-8">
+            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-3 w-16 bg-secondary rounded animate-pulse" />)}
+          </div>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="px-5 py-4 border-b border-border flex items-center gap-6 animate-pulse">
+              <div className="h-4 w-32 bg-secondary rounded" />
+              <div className="h-5 w-16 bg-secondary rounded-full" />
+              <div className="h-3 w-12 bg-secondary/60 rounded" />
+              <div className="flex-1" />
+              <div className="h-3 w-20 bg-secondary/60 rounded" />
+            </div>
+          ))}
         </div>
       </AppLayout>
     );
@@ -109,8 +124,13 @@ export default function LeadsPage() {
             ))}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-8 text-center text-sm text-muted-foreground">
-                  No leads found. Create one to get started!
+                <td colSpan={7} className="px-5 py-16 text-center">
+                  <Target className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+                  <p className="text-sm font-semibold text-foreground">No leads yet</p>
+                  <p className="text-sm text-muted-foreground mt-1 mb-4">Create your first lead to start tracking your pipeline.</p>
+                  <Button size="sm" onClick={() => { setEditingLead(null); setDialogOpen(true); }}>
+                    <Plus className="h-4 w-4 mr-2" />New Lead
+                  </Button>
                 </td>
               </tr>
             )}
