@@ -43,6 +43,19 @@ async def create(
     await activity_log(session, "lead", lead.id, "created", user_id, {"entity_name": lead.title})
     await invalidate_search_cache()
     await session.refresh(lead)
+    # Fire automation triggers (non-fatal)
+    try:
+        from app.services import automation_service
+        await automation_service.execute_trigger(session, "lead_created", {
+            "lead_id": lead.id,
+            "lead_title": lead.title,
+            "contact_id": lead.contact_id,
+            "user_id": user_id,
+            "entity_name": lead.title,
+        })
+    except Exception as e:
+        import logging
+        logging.getLogger("novacrm.automation").warning(f"Lead automation trigger failed: {e}")
     return lead
 
 

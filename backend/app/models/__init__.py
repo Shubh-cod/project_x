@@ -9,6 +9,7 @@ from app.models.task import Task
 from app.models.note import Note
 from app.models.activity import Activity
 from app.models.email_log import EmailLog
+from app.models.automation_rule import AutomationRule
 
 __all__ = [
     "BaseModel",
@@ -21,4 +22,6 @@ __all__ = [
     "Note",
     "Activity",
     "EmailLog",
+    "AutomationRule",
 ]
+

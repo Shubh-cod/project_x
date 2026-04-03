@@ -101,6 +101,25 @@ async def update(
     else:
         await activity_log(session, "deal", deal.id, "updated", user_id, {"entity_name": deal.title})
     await session.refresh(deal)
+    # Fire deal_stale automation if deal hasn't progressed
+    try:
+        from datetime import datetime, timezone, timedelta
+        if (
+            deal.stage not in ("won", "lost")
+            and deal.updated_at
+            and deal.updated_at < datetime.now(timezone.utc) - timedelta(days=5)
+        ):
+            from app.services import automation_service
+            await automation_service.execute_trigger(session, "deal_stale", {
+                "deal_id": deal.id,
+                "deal_title": deal.title,
+                "contact_id": deal.contact_id,
+                "user_id": user_id,
+                "entity_name": deal.title,
+            })
+    except Exception as e:
+        import logging
+        logging.getLogger("novacrm.automation").warning(f"Deal automation trigger failed: {e}")
     return deal
 
 

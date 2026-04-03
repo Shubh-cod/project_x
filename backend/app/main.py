@@ -21,6 +21,45 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Create automation_rules table if it doesn't exist (additive, no Alembic)
+    try:
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS automation_rules (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name VARCHAR(255) NOT NULL,
+                    trigger_event VARCHAR(50) NOT NULL,
+                    conditions JSONB,
+                    action_type VARCHAR(50) NOT NULL DEFAULT 'create_task',
+                    action_config JSONB,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_automation_rules_trigger_event
+                ON automation_rules (trigger_event)
+            """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_automation_rules_name
+                ON automation_rules (name)
+            """))
+        logger.info("automation_rules table ensured")
+    except Exception as e:
+        logger.warning(f"Could not ensure automation_rules table: {e}")
+
+    # Seed default automation rules
+    try:
+        from app.services.automation_service import seed_default_rules
+        async with AsyncSessionLocal() as session:
+            await seed_default_rules(session)
+            await session.commit()
+    except Exception as e:
+        logger.warning(f"Could not seed automation rules: {e}")
+
     yield
     await close_redis()
 
