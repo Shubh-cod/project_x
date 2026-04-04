@@ -16,7 +16,7 @@ class User(BaseModel):
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole),
         nullable=False,
-        default=UserRole.agent,
+        default=UserRole.admin,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 

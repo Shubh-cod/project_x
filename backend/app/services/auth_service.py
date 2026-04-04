@@ -33,7 +33,7 @@ async def register(session: AsyncSession, data: RegisterRequest) -> User:
         email=data.email,
         hashed_password=get_password_hash(data.password),
         full_name=data.full_name,
-        role=UserRole.agent,
+        role=UserRole.admin,
     )
     session.add(user)
     await session.flush()
