@@ -10,6 +10,7 @@ from app.models.task import Task
 from app.utils.pagination import paginate
 from app.utils.enums import TaskStatus
 from app.services.activity_service import log as activity_log
+from app.services.dashboard_service import invalidate_dashboard_cache
 from app.schemas.task import TaskCreate, TaskUpdate
 
 
@@ -31,6 +32,7 @@ async def create(
     session.add(task)
     await session.flush()
     await activity_log(session, "task", task.id, "created", user_id, {"title": data.title})
+    await invalidate_dashboard_cache(task.assigned_to)
     await session.refresh(task)
     return task
 
@@ -100,5 +102,6 @@ async def update(
     if data.assigned_to is not None:
         task.assigned_to = data.assigned_to
     await session.flush()
+    await invalidate_dashboard_cache(task.assigned_to)
     await session.refresh(task)
     return task

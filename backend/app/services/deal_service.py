@@ -9,6 +9,7 @@ from app.models.deal import Deal
 from app.utils.pagination import paginate
 from app.services.activity_service import log as activity_log
 from app.services.search_service import invalidate_search_cache
+from app.services.dashboard_service import invalidate_dashboard_cache
 from app.schemas.deal import DealCreate, DealUpdate
 
 
@@ -33,6 +34,7 @@ async def create(
     await session.flush()
     await activity_log(session, "deal", deal.id, "created", user_id, {"entity_name": deal.title})
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(deal.assigned_to)
     await session.refresh(deal)
     return deal
 
@@ -95,6 +97,7 @@ async def update(
     if data.lost_reason is not None:
         deal.lost_reason = data.lost_reason
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(deal.assigned_to)
     await session.flush()
     if data.stage is not None and data.stage != old_stage:
         await activity_log(session, "deal", deal.id, "status_changed", user_id, {"old": old_stage, "new": data.stage, "entity_name": deal.title})

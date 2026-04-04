@@ -13,6 +13,7 @@ from app.utils.pagination import paginate
 from app.utils.exceptions import NotFoundError
 from app.services.activity_service import log as activity_log
 from app.services.search_service import invalidate_search_cache
+from app.services.dashboard_service import invalidate_dashboard_cache
 from app.schemas.contact import ContactCreate, ContactUpdate, ContactListFilters
 
 
@@ -37,6 +38,7 @@ async def create(
         await _set_contact_tags(session, contact.id, data.tags)
     await activity_log(session, "contact", contact.id, "created", user_id, {"entity_name": contact.name})
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(contact.assigned_to)
     await session.refresh(contact)
     return contact
 
@@ -105,6 +107,7 @@ async def update(
         await _set_contact_tags(session, contact.id, data.tags)
     await activity_log(session, "contact", contact.id, "updated", user_id, {"entity_name": contact.name})
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(contact.assigned_to)
     await session.flush()
     await session.refresh(contact)
     return contact
@@ -116,6 +119,7 @@ async def soft_delete(session: AsyncSession, contact_id: UUID, user_id: Optional
         return False
     contact.is_deleted = True
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(contact.assigned_to)
     await session.flush()
     return True
 

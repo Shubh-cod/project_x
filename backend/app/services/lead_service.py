@@ -17,6 +17,7 @@ from app.utils.pagination import paginate
 from app.services.activity_service import log as activity_log
 from app.services.contact_service import get_by_id as get_contact_by_id
 from app.services.search_service import invalidate_search_cache
+from app.services.dashboard_service import invalidate_dashboard_cache
 from app.schemas.lead import LeadCreate, LeadUpdate
 
 
@@ -42,6 +43,7 @@ async def create(
         await _set_lead_tags(session, lead.id, data.tags)
     await activity_log(session, "lead", lead.id, "created", user_id, {"entity_name": lead.title})
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(lead.assigned_to)
     await session.refresh(lead)
     # Fire automation triggers (non-fatal)
     try:
@@ -123,6 +125,7 @@ async def update(
     if data.tags is not None:
         await _set_lead_tags(session, lead.id, data.tags)
     await invalidate_search_cache()
+    await invalidate_dashboard_cache(lead.assigned_to)
     await session.flush()
     if data.status is not None and data.status != old_status:
         await activity_log(session, "lead", lead.id, "status_changed", user_id, {"old": old_status, "new": data.status, "entity_name": lead.title})
@@ -160,6 +163,7 @@ async def convert_to_contact_and_deal(
         await session.flush()
         await activity_log(session, "deal", deal.id, "created", user_id)
     await activity_log(session, "lead", lead.id, "converted", user_id, {"contact_id": str(contact.id), "deal_id": str(deal.id) if deal else None})
+    await invalidate_dashboard_cache(lead.assigned_to)
     await session.flush()
     return contact, deal
 

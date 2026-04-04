@@ -9,5 +9,5 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("", response_model=APIResponse)
 async def get_dashboard(db: DBSession, current_user: CurrentUser):
-    data = await dashboard_service.get_dashboard(db, current_user.id)
+    data = await dashboard_service.get_dashboard(db, current_user.id, current_user.role)
     return APIResponse(data=data, success=True)
