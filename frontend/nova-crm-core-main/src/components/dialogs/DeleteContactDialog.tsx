@@ -66,7 +66,7 @@ export function DeleteContactDialog({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel ripple={false}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => onConfirm(deleteAssociated)}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
