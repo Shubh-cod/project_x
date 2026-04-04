@@ -6,6 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.deal import Deal
+from app.models.note import Note
 from app.utils.pagination import paginate
 from app.services.activity_service import log as activity_log
 from app.services.search_service import invalidate_search_cache
@@ -33,6 +34,17 @@ async def create(
     )
     session.add(deal)
     await session.flush()
+    # ── Auto-create a Note record if notes were provided ──
+    if data.notes and data.notes.strip():
+        note = Note(
+            entity_type="deal",
+            entity_id=deal.id,
+            content=data.notes.strip(),
+            owner_id=user_id,
+            created_by=user_id,
+        )
+        session.add(note)
+
     await activity_log(session, "deal", deal.id, "created", user_id, {"entity_name": deal.title})
     await invalidate_search_cache()
     await invalidate_dashboard_cache(deal.assigned_to)

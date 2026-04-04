@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.contact import Contact
+from app.models.note import Note
 from app.models.tag import Tag, contact_tags
 from app.utils.pagination import paginate
 from app.utils.exceptions import NotFoundError
@@ -35,6 +36,17 @@ async def create(
     )
     session.add(contact)
     await session.flush()
+    # ── Auto-create a Note record if notes were provided ──
+    if data.notes and data.notes.strip():
+        note = Note(
+            entity_type="contact",
+            entity_id=contact.id,
+            content=data.notes.strip(),
+            owner_id=user_id,
+            created_by=user_id,
+        )
+        session.add(note)
+
     if data.tags:
         await _set_contact_tags(session, contact.id, data.tags)
     await activity_log(session, "contact", contact.id, "created", user_id, {"entity_name": contact.name})

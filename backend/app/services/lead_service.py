@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.models.lead import Lead
 from app.models.contact import Contact
 from app.models.deal import Deal
+from app.models.note import Note
 from app.models.tag import Tag, lead_tags
 from app.utils.enums import LeadStatus
 from app.utils.exceptions import NotFoundError
@@ -40,6 +41,17 @@ async def create(
     )
     session.add(lead)
     await session.flush()
+    # ── Auto-create a Note record if notes were provided ──
+    if data.notes and data.notes.strip():
+        note = Note(
+            entity_type="lead",
+            entity_id=lead.id,
+            content=data.notes.strip(),
+            owner_id=user_id,
+            created_by=user_id,
+        )
+        session.add(note)
+
     if data.tags:
         await _set_lead_tags(session, lead.id, data.tags)
     await activity_log(session, "lead", lead.id, "created", user_id, {"entity_name": lead.title})
