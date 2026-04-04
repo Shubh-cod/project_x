@@ -20,5 +20,8 @@ export const contactsApi = {
   update: (id: string, data: Partial<Contact>) =>
     client.request<Contact>(`/contacts/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
 
-  delete: (id: string) => client.request(`/contacts/${id}`, { method: "DELETE" }),
+  delete: (id: string, deleteAssociated?: boolean) => {
+    const qs = deleteAssociated ? "?delete_associated=true" : "";
+    return client.request(`/contacts/${id}${qs}`, { method: "DELETE" });
+  },
 };

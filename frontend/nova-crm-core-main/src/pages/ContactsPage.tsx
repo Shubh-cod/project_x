@@ -10,12 +10,15 @@ import { useNavigate } from "react-router-dom";
 import { contactsApi } from "@/api/contacts.api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ContactDialog } from "@/components/dialogs/ContactDialog";
+import { DeleteContactDialog } from "@/components/dialogs/DeleteContactDialog";
 
 export default function ContactsPage() {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<any>(null);
+  const [contactToDelete, setContactToDelete] = useState<any>(null);
   const debouncedSearch = useDebounce(search, 300);
   const queryClient = useQueryClient();
 
@@ -25,7 +28,8 @@ export default function ContactsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => contactsApi.delete(id),
+    mutationFn: ({ id, deleteAssociated }: { id: string; deleteAssociated: boolean }) => 
+      contactsApi.delete(id, deleteAssociated),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success("Contact deleted");
@@ -132,7 +136,11 @@ export default function ContactsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(c.id); }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setContactToDelete(c);
+                      setDeleteDialogOpen(true);
+                    }}
                   >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
@@ -160,6 +168,18 @@ export default function ContactsPage() {
       </div>
 
       <ContactDialog open={dialogOpen} onOpenChange={setDialogOpen} contact={editingContact} />
+      
+      <DeleteContactDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={setDeleteDialogOpen}
+        contactName={contactToDelete?.name}
+        onConfirm={(deleteAssociated) => {
+          if (contactToDelete) {
+            deleteMutation.mutate({ id: contactToDelete.id, deleteAssociated });
+            setDeleteDialogOpen(false);
+          }
+        }}
+      />
     </AppLayout>
   );
 }
