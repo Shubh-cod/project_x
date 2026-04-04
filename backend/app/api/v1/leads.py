@@ -50,6 +50,7 @@ async def list_leads(
     from datetime import datetime
     items, total = await lead_service.list_leads(
         db,
+        user_id=current_user.id,
         status=status,
         contact_id=contact_id,
         assigned_to=assigned_to,
@@ -74,7 +75,7 @@ async def list_leads(
 
 @router.get("/{lead_id}", response_model=APIResponse)
 async def get_lead(lead_id: UUID, db: DBSession, current_user: CurrentUser):
-    lead = await lead_service.get_by_id(db, lead_id)
+    lead = await lead_service.get_by_id(db, lead_id, user_id=current_user.id)
     if not lead:
         raise NotFoundError("Lead not found")
     return APIResponse(data=_lead_to_response(lead), success=True)

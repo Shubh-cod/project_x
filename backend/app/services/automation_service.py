@@ -31,6 +31,7 @@ async def create_rule(
         action_config=data.action_config,
         is_active=data.is_active,
         created_by=user_id,
+        owner_id=user_id,
     )
     session.add(rule)
     await session.flush()
@@ -38,19 +39,24 @@ async def create_rule(
     return rule
 
 
-async def get_rule_by_id(session: AsyncSession, rule_id: UUID) -> AutomationRule | None:
-    result = await session.execute(
-        select(AutomationRule).where(AutomationRule.id == rule_id)
-    )
+async def get_rule_by_id(session: AsyncSession, rule_id: UUID, user_id: Optional[UUID] = None) -> AutomationRule | None:
+    q = select(AutomationRule).where(AutomationRule.id == rule_id)
+    if user_id is not None:
+        q = q.where(AutomationRule.owner_id == user_id)
+    result = await session.execute(q)
     return result.scalar_one_or_none()
 
 
 async def list_rules(
     session: AsyncSession,
+    user_id: Optional[UUID] = None,
     page: int = 1,
     page_size: int = 50,
 ) -> tuple[list[AutomationRule], int]:
     q = select(AutomationRule).order_by(AutomationRule.created_at.desc())
+    # ── Data isolation: only show rules owned by user ──
+    if user_id is not None:
+        q = q.where(AutomationRule.owner_id == user_id)
     return await paginate(session, q, page, page_size)
 
 
@@ -58,8 +64,9 @@ async def update_rule(
     session: AsyncSession,
     rule_id: UUID,
     data: AutomationRuleUpdate,
+    user_id: Optional[UUID] = None,
 ) -> AutomationRule | None:
-    rule = await get_rule_by_id(session, rule_id)
+    rule = await get_rule_by_id(session, rule_id, user_id=user_id)
     if not rule:
         return None
     if data.name is not None:
@@ -79,8 +86,8 @@ async def update_rule(
     return rule
 
 
-async def delete_rule(session: AsyncSession, rule_id: UUID) -> bool:
-    rule = await get_rule_by_id(session, rule_id)
+async def delete_rule(session: AsyncSession, rule_id: UUID, user_id: Optional[UUID] = None) -> bool:
+    rule = await get_rule_by_id(session, rule_id, user_id=user_id)
     if not rule:
         return False
     await session.delete(rule)
@@ -168,6 +175,7 @@ async def _execute_create_task(
         linked_to_type=linked_to_type,
         linked_to_id=linked_to_id,
         assigned_to=assigned_to,
+        owner_id=assigned_to,  # auto-created tasks owned by the user who triggered
     )
     session.add(task)
     await session.flush()

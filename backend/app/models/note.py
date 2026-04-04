@@ -13,6 +13,11 @@ class Note(BaseModel):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     entity_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # contact, lead, deal
     entity_id: Mapped[uuid.UUID] = mapped_column(nullable=False, index=True)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_by: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

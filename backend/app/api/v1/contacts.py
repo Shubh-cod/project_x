@@ -56,7 +56,7 @@ async def list_contacts(
         page=page,
         page_size=page_size,
     )
-    items, total = await contact_service.list_contacts(db, filters)
+    items, total = await contact_service.list_contacts(db, filters, user_id=current_user.id)
     pages = (total + page_size - 1) // page_size if page_size else 0
     return APIResponse(
         data={
@@ -72,7 +72,7 @@ async def list_contacts(
 
 @router.get("/{contact_id}", response_model=APIResponse)
 async def get_contact(contact_id: UUID, db: DBSession, current_user: CurrentUser):
-    contact = await contact_service.get_by_id(db, contact_id)
+    contact = await contact_service.get_by_id(db, contact_id, user_id=current_user.id)
     if not contact:
         raise NotFoundError("Contact not found")
     return APIResponse(data=_contact_to_response(contact), success=True)

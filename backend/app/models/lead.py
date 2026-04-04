@@ -23,6 +23,11 @@ class Lead(BaseModel):
     source: Mapped[str] = mapped_column(String(50), nullable=False, default=LeadSource.OTHER.value)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default=LeadStatus.NEW.value, index=True)
     priority: Mapped[str] = mapped_column(String(20), nullable=False, default=LeadPriority.MEDIUM.value, index=True)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

@@ -31,6 +31,7 @@ async def create(
         source=data.source,
         notes=data.notes,
         assigned_to=data.assigned_to,
+        owner_id=user_id,
     )
     session.add(contact)
     await session.flush()
@@ -43,24 +44,31 @@ async def create(
     return contact
 
 
-async def get_by_id(session: AsyncSession, contact_id: UUID) -> Contact | None:
-    result = await session.execute(
+async def get_by_id(session: AsyncSession, contact_id: UUID, user_id: Optional[UUID] = None) -> Contact | None:
+    q = (
         select(Contact)
         .where(and_(Contact.id == contact_id, Contact.is_deleted == False))
         .options(selectinload(Contact.tags))
     )
+    if user_id is not None:
+        q = q.where(Contact.owner_id == user_id)
+    result = await session.execute(q)
     return result.scalar_one_or_none()
 
 
 async def list_contacts(
     session: AsyncSession,
     filters: ContactListFilters,
+    user_id: Optional[UUID] = None,
 ) -> tuple[list[Contact], int]:
     q = (
         select(Contact)
         .where(Contact.is_deleted == False)
         .options(selectinload(Contact.tags))
     )
+    # ── Data isolation: always filter by owner ──
+    if user_id is not None:
+        q = q.where(Contact.owner_id == user_id)
     if filters.name:
         q = q.where(Contact.name.ilike(f"%{filters.name}%"))
     if filters.email:
@@ -84,7 +92,7 @@ async def update(
     data: ContactUpdate,
     user_id: Optional[UUID] = None,
 ) -> Contact | None:
-    contact = await get_by_id(session, contact_id)
+    contact = await get_by_id(session, contact_id, user_id=user_id)
     if not contact:
         return None
     if data.name is not None:
@@ -114,7 +122,7 @@ async def update(
 
 
 async def soft_delete(session: AsyncSession, contact_id: UUID, user_id: Optional[UUID] = None) -> bool:
-    contact = await get_by_id(session, contact_id)
+    contact = await get_by_id(session, contact_id, user_id=user_id)
     if not contact:
         return False
     contact.is_deleted = True

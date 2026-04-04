@@ -25,7 +25,9 @@ async def list_notes_by_entity(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    items, total = await note_service.list_by_entity(db, entity_type, entity_id, page=page, page_size=page_size)
+    items, total = await note_service.list_by_entity(
+        db, entity_type, entity_id, user_id=current_user.id, page=page, page_size=page_size,
+    )
     pages = (total + page_size - 1) // page_size if page_size else 0
     return APIResponse(
         data={
@@ -41,7 +43,7 @@ async def list_notes_by_entity(
 
 @router.get("/{note_id}", response_model=APIResponse)
 async def get_note(note_id: UUID, db: DBSession, current_user: CurrentUser):
-    note = await note_service.get_by_id(db, note_id)
+    note = await note_service.get_by_id(db, note_id, user_id=current_user.id)
     if not note:
         raise NotFoundError("Note not found")
     return APIResponse(data=NoteResponse.model_validate(note), success=True)
@@ -54,7 +56,7 @@ async def update_note(
     db: DBSession,
     current_user: CurrentUser,
 ):
-    note = await note_service.update(db, note_id, data)
+    note = await note_service.update(db, note_id, data, user_id=current_user.id)
     if not note:
         raise NotFoundError("Note not found")
     return APIResponse(data=NoteResponse.model_validate(note), message="Note updated", success=True)
@@ -62,7 +64,7 @@ async def update_note(
 
 @router.delete("/{note_id}", response_model=APIResponse)
 async def delete_note(note_id: UUID, db: DBSession, current_user: CurrentUser):
-    ok = await note_service.delete(db, note_id)
+    ok = await note_service.delete(db, note_id, user_id=current_user.id)
     if not ok:
         raise NotFoundError("Note not found")
     return APIResponse(message="Note deleted", success=True)

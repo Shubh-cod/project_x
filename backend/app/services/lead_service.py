@@ -36,6 +36,7 @@ async def create(
         estimated_value=data.estimated_value,
         notes=data.notes,
         status_changed_at=datetime.now(timezone.utc),
+        owner_id=user_id,
     )
     session.add(lead)
     await session.flush()
@@ -61,15 +62,17 @@ async def create(
     return lead
 
 
-async def get_by_id(session: AsyncSession, lead_id: UUID) -> Lead | None:
-    result = await session.execute(
-        select(Lead).where(Lead.id == lead_id).options(selectinload(Lead.tags))
-    )
+async def get_by_id(session: AsyncSession, lead_id: UUID, user_id: Optional[UUID] = None) -> Lead | None:
+    q = select(Lead).where(Lead.id == lead_id).options(selectinload(Lead.tags))
+    if user_id is not None:
+        q = q.where(Lead.owner_id == user_id)
+    result = await session.execute(q)
     return result.scalar_one_or_none()
 
 
 async def list_leads(
     session: AsyncSession,
+    user_id: Optional[UUID] = None,
     status: Optional[str] = None,
     contact_id: Optional[UUID] = None,
     assigned_to: Optional[UUID] = None,
@@ -80,6 +83,9 @@ async def list_leads(
     page_size: int = 20,
 ) -> tuple[list[Lead], int]:
     q = select(Lead).options(selectinload(Lead.tags)).order_by(Lead.created_at.desc())
+    # ── Data isolation: always filter by owner ──
+    if user_id is not None:
+        q = q.where(Lead.owner_id == user_id)
     if status:
         q = q.where(Lead.status == status)
     if contact_id:
@@ -101,7 +107,7 @@ async def update(
     data: LeadUpdate,
     user_id: Optional[UUID] = None,
 ) -> Lead | None:
-    lead = await get_by_id(session, lead_id)
+    lead = await get_by_id(session, lead_id, user_id=user_id)
     if not lead:
         return None
     old_status = lead.status
@@ -143,10 +149,10 @@ async def convert_to_contact_and_deal(
     deal_value: Optional[float] = None,
     user_id: Optional[UUID] = None,
 ) -> tuple[Contact, Optional[Deal]]:
-    lead = await get_by_id(session, lead_id)
+    lead = await get_by_id(session, lead_id, user_id=user_id)
     if not lead:
         raise NotFoundError("Lead not found")
-    contact = await get_contact_by_id(session, lead.contact_id)
+    contact = await get_contact_by_id(session, lead.contact_id, user_id=user_id)
     if not contact:
         raise NotFoundError("Contact not found")
     deal = None
@@ -158,6 +164,7 @@ async def convert_to_contact_and_deal(
             stage="prospect",
             value=deal_value or 0,
             assigned_to=lead.assigned_to,
+            owner_id=user_id,
         )
         session.add(deal)
         await session.flush()

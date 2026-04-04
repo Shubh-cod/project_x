@@ -22,6 +22,7 @@ async def create(
         entity_type=data.entity_type,
         entity_id=data.entity_id,
         created_by=user_id,
+        owner_id=user_id,
     )
     session.add(note)
     await session.flush()
@@ -45,8 +46,11 @@ async def create(
     return note
 
 
-async def get_by_id(session: AsyncSession, note_id: UUID) -> Note | None:
-    result = await session.execute(select(Note).where(Note.id == note_id))
+async def get_by_id(session: AsyncSession, note_id: UUID, user_id: Optional[UUID] = None) -> Note | None:
+    q = select(Note).where(Note.id == note_id)
+    if user_id is not None:
+        q = q.where(Note.owner_id == user_id)
+    result = await session.execute(q)
     return result.scalar_one_or_none()
 
 
@@ -54,6 +58,7 @@ async def list_by_entity(
     session: AsyncSession,
     entity_type: str,
     entity_id: UUID,
+    user_id: Optional[UUID] = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Note], int]:
@@ -62,6 +67,9 @@ async def list_by_entity(
         .where(Note.entity_type == entity_type, Note.entity_id == entity_id)
         .order_by(Note.created_at.desc())
     )
+    # ── Data isolation: only show notes owned by user ──
+    if user_id is not None:
+        q = q.where(Note.owner_id == user_id)
     return await paginate(session, q, page, page_size)
 
 
@@ -69,8 +77,9 @@ async def update(
     session: AsyncSession,
     note_id: UUID,
     data: NoteUpdate,
+    user_id: Optional[UUID] = None,
 ) -> Note | None:
-    note = await get_by_id(session, note_id)
+    note = await get_by_id(session, note_id, user_id=user_id)
     if not note:
         return None
     if data.content is not None:
@@ -80,8 +89,8 @@ async def update(
     return note
 
 
-async def delete(session: AsyncSession, note_id: UUID) -> bool:
-    note = await get_by_id(session, note_id)
+async def delete(session: AsyncSession, note_id: UUID, user_id: Optional[UUID] = None) -> bool:
+    note = await get_by_id(session, note_id, user_id=user_id)
     if not note:
         return False
     await session.delete(note)

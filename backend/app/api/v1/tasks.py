@@ -29,6 +29,7 @@ async def list_tasks(
 ):
     items, total = await task_service.list_tasks(
         db,
+        user_id=current_user.id,
         assigned_to=assigned_to,
         status=status,
         linked_to_type=linked_to_type,
@@ -51,13 +52,13 @@ async def list_tasks(
 
 @router.get("/overdue", response_model=APIResponse)
 async def overdue_tasks(db: DBSession, current_user: CurrentUser):
-    tasks = await task_service.overdue_tasks(db, assigned_to=current_user.id)
+    tasks = await task_service.overdue_tasks(db, user_id=current_user.id, assigned_to=current_user.id)
     return APIResponse(data=[TaskResponse.model_validate(t) for t in tasks], success=True)
 
 
 @router.get("/{task_id}", response_model=APIResponse)
 async def get_task(task_id: UUID, db: DBSession, current_user: CurrentUser):
-    task = await task_service.get_by_id(db, task_id)
+    task = await task_service.get_by_id(db, task_id, user_id=current_user.id)
     if not task:
         raise NotFoundError("Task not found")
     return APIResponse(data=TaskResponse.model_validate(task), success=True)

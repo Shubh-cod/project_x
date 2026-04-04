@@ -29,6 +29,11 @@ class Deal(BaseModel):
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     close_date: Mapped[date | None] = mapped_column(nullable=True)
     probability: Mapped[int | None] = mapped_column(nullable=True)  # 0-100
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

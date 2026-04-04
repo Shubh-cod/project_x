@@ -28,6 +28,7 @@ async def create(
         linked_to_type=data.linked_to_type,
         linked_to_id=data.linked_to_id,
         assigned_to=data.assigned_to or user_id,  # default to creating user
+        owner_id=user_id,
     )
     session.add(task)
     await session.flush()
@@ -37,13 +38,17 @@ async def create(
     return task
 
 
-async def get_by_id(session: AsyncSession, task_id: UUID) -> Task | None:
-    result = await session.execute(select(Task).where(Task.id == task_id))
+async def get_by_id(session: AsyncSession, task_id: UUID, user_id: Optional[UUID] = None) -> Task | None:
+    q = select(Task).where(Task.id == task_id)
+    if user_id is not None:
+        q = q.where(Task.owner_id == user_id)
+    result = await session.execute(q)
     return result.scalar_one_or_none()
 
 
 async def list_tasks(
     session: AsyncSession,
+    user_id: Optional[UUID] = None,
     assigned_to: Optional[UUID] = None,
     status: Optional[str] = None,
     linked_to_type: Optional[str] = None,
@@ -52,6 +57,9 @@ async def list_tasks(
     page_size: int = 20,
 ) -> tuple[list[Task], int]:
     q = select(Task).order_by(Task.due_date.asc().nullslast(), Task.created_at.desc())
+    # ── Data isolation: always filter by owner ──
+    if user_id is not None:
+        q = q.where(Task.owner_id == user_id)
     if assigned_to:
         q = q.where(Task.assigned_to == assigned_to)
     if status:
@@ -63,13 +71,16 @@ async def list_tasks(
     return await paginate(session, q, page, page_size)
 
 
-async def overdue_tasks(session: AsyncSession, assigned_to: Optional[UUID] = None) -> list[Task]:
+async def overdue_tasks(session: AsyncSession, user_id: Optional[UUID] = None, assigned_to: Optional[UUID] = None) -> list[Task]:
     now = datetime.now(timezone.utc)
     q = (
         select(Task)
         .where(and_(Task.due_date < now, Task.status != TaskStatus.DONE.value))
         .order_by(Task.due_date.asc())
     )
+    # ── Data isolation: always filter by owner ──
+    if user_id is not None:
+        q = q.where(Task.owner_id == user_id)
     if assigned_to:
         q = q.where(Task.assigned_to == assigned_to)
     result = await session.execute(q)
@@ -82,7 +93,7 @@ async def update(
     data: TaskUpdate,
     user_id: Optional[UUID] = None,
 ) -> Task | None:
-    task = await get_by_id(session, task_id)
+    task = await get_by_id(session, task_id, user_id=user_id)
     if not task:
         return None
     if data.title is not None:

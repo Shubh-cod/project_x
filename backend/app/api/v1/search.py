@@ -14,5 +14,5 @@ async def search(
     q: str = Query(..., min_length=1),
     limit: int = Query(20, ge=1, le=100),
 ):
-    result = await search_service.search(db, q, limit=limit, use_cache=True)
+    result = await search_service.search(db, q, user_id=current_user.id, limit=limit, use_cache=True)
     return APIResponse(data=result, success=True)

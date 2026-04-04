@@ -18,7 +18,9 @@ async def list_entity_activities(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    items, total = await activity_service.list_by_entity(db, entity_type, entity_id, page=page, page_size=page_size)
+    items, total = await activity_service.list_by_entity(
+        db, entity_type, entity_id, user_id=current_user.id, page=page, page_size=page_size,
+    )
     pages = (total + page_size - 1) // page_size if page_size else 0
     return APIResponse(
         data={
@@ -36,7 +38,6 @@ async def list_entity_activities(
 async def list_global_activities(
     db: DBSession,
     current_user: CurrentUser,
-    user_id: UUID | None = None,
     entity_type: str | None = None,
     entity_id: UUID | None = None,
     date_from: str | None = None,
@@ -47,7 +48,7 @@ async def list_global_activities(
     from datetime import datetime
     items, total = await activity_service.list_global(
         db,
-        user_id=user_id,
+        user_id=current_user.id,  # ALWAYS scoped to current user — no param override
         entity_type=entity_type,
         entity_id=entity_id,
         date_from=datetime.fromisoformat(date_from.replace("Z", "+00:00")) if date_from else None,

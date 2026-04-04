@@ -17,31 +17,30 @@ from app.redis.cache import cache_get_json, cache_set_json, cache_delete
 DASHBOARD_CACHE_TTL = 300  # 5 minutes
 
 
-async def get_summary_stats(session: AsyncSession, user_id: UUID | None = None, role: UserRole | None = None) -> dict:
+async def get_summary_stats(session: AsyncSession, user_id: UUID) -> dict:
+    """Summary stats always scoped to the requesting user's data."""
     now = datetime.now(timezone.utc)
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_today = start_of_today + timedelta(days=1)
 
-    contacts_q = select(func.count(Contact.id)).where(Contact.is_deleted == False)
-    leads_q = select(func.count(Lead.id)).where(Lead.status != "lost")
+    contacts_q = select(func.count(Contact.id)).where(
+        and_(Contact.is_deleted == False, Contact.owner_id == user_id)
+    )
+    leads_q = select(func.count(Lead.id)).where(
+        and_(Lead.status != "lost", Lead.owner_id == user_id)
+    )
     deals_won_q = select(func.count(Deal.id)).where(
-        and_(Deal.stage == "won", Deal.updated_at >= start_of_month)
+        and_(Deal.stage == "won", Deal.updated_at >= start_of_month, Deal.owner_id == user_id)
     )
     tasks_today_q = select(func.count(Task.id)).where(
         and_(
             Task.due_date >= start_of_today,
             Task.due_date < end_of_today,
             Task.status != "done",
+            Task.owner_id == user_id,
         )
     )
-
-    # Filtering for non-admins
-    if role and role != UserRole.admin:
-        contacts_q = contacts_q.where(Contact.assigned_to == user_id)
-        leads_q = leads_q.where(Lead.assigned_to == user_id)
-        deals_won_q = deals_won_q.where(Deal.assigned_to == user_id)
-        tasks_today_q = tasks_today_q.where(Task.assigned_to == user_id)
 
     r1 = await session.execute(contacts_q)
     r2 = await session.execute(leads_q)
@@ -56,14 +55,12 @@ async def get_summary_stats(session: AsyncSession, user_id: UUID | None = None, 
     }
 
 
-async def get_pipeline_by_stage(session: AsyncSession, user_id: UUID | None = None, role: UserRole | None = None) -> list[dict]:
+async def get_pipeline_by_stage(session: AsyncSession, user_id: UUID) -> list[dict]:
     q = (
         select(Deal.stage, func.count(Deal.id).label("count"), func.coalesce(func.sum(Deal.value), 0).label("total_value"))
+        .where(Deal.owner_id == user_id)
         .group_by(Deal.stage)
     )
-    if role and role != UserRole.admin:
-        q = q.where(Deal.assigned_to == user_id)
-        
     result = await session.execute(q)
     return [
         {"stage": r.stage, "count": r.count, "total_value": float(r.total_value)}
@@ -71,38 +68,44 @@ async def get_pipeline_by_stage(session: AsyncSession, user_id: UUID | None = No
     ]
 
 
-async def get_agent_performance(session: AsyncSession, last_n_days: int = 30) -> list[dict]:
+async def get_agent_performance(session: AsyncSession, user_id: UUID, last_n_days: int = 30) -> list[dict]:
+    """Show only the requesting user's own performance."""
     since = datetime.now(timezone.utc) - timedelta(days=last_n_days)
-    # Deals won per user
+    # Deals won by this user
     deals_won_q = (
-        select(Deal.assigned_to, func.count(Deal.id).label("deals_won"))
-        .where(and_(Deal.stage == "won", Deal.updated_at >= since, Deal.assigned_to.isnot(None)))
-        .group_by(Deal.assigned_to)
+        select(func.count(Deal.id).label("deals_won"))
+        .where(and_(
+            Deal.stage == "won",
+            Deal.updated_at >= since,
+            Deal.owner_id == user_id,
+        ))
     )
-    # Leads contacted (status != new) per user - approximate "contacted" as status not new
+    # Leads contacted (status != new) by this user
     leads_contacted_q = (
-        select(Lead.assigned_to, func.count(Lead.id).label("leads_contacted"))
-        .where(and_(Lead.status != "new", Lead.updated_at >= since, Lead.assigned_to.isnot(None)))
-        .group_by(Lead.assigned_to)
+        select(func.count(Lead.id).label("leads_contacted"))
+        .where(and_(
+            Lead.status != "new",
+            Lead.updated_at >= since,
+            Lead.owner_id == user_id,
+        ))
     )
     dw_result = await session.execute(deals_won_q)
     lc_result = await session.execute(leads_contacted_q)
-    dw_map = {str(r.assigned_to): r.deals_won for r in dw_result.all()}
-    lc_map = {str(r.assigned_to): r.leads_contacted for r in lc_result.all()}
-    all_user_ids = set(dw_map.keys()) | set(lc_map.keys())
-    if not all_user_ids:
-        return []
-    users_q = select(User).where(User.id.in_([UUID(uid) for uid in all_user_ids]))
-    users_result = await session.execute(users_q)
-    users = {str(u.id): u for u in users_result.scalars().all()}
+    deals_won = dw_result.scalar_one() or 0
+    leads_contacted = lc_result.scalar_one() or 0
+
+    # Fetch user info
+    user_q = select(User).where(User.id == user_id)
+    user_result = await session.execute(user_q)
+    user = user_result.scalar_one_or_none()
+
     return [
         {
-            "user_id": uid,
-            "full_name": users[uid].full_name if uid in users else "Unknown",
-            "deals_won": dw_map.get(uid, 0),
-            "leads_contacted": lc_map.get(uid, 0),
+            "user_id": str(user_id),
+            "full_name": user.full_name if user else "Unknown",
+            "deals_won": deals_won,
+            "leads_contacted": leads_contacted,
         }
-        for uid in sorted(all_user_ids)
     ]
 
 
@@ -111,9 +114,9 @@ async def get_dashboard(session: AsyncSession, user_id: UUID, role: UserRole) ->
     cached = await cache_get_json(cache_key)
     if cached:
         return cached
-    summary = await get_summary_stats(session, user_id, role)
-    pipeline = await get_pipeline_by_stage(session, user_id, role)
-    agents = await get_agent_performance(session)
+    summary = await get_summary_stats(session, user_id)
+    pipeline = await get_pipeline_by_stage(session, user_id)
+    agents = await get_agent_performance(session, user_id)
     data = {
         "summary": summary,
         "pipeline_by_stage": pipeline,

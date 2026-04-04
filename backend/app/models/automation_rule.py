@@ -25,6 +25,11 @@ class AutomationRule(BaseModel):
         JSON().with_variant(JSONB, "postgresql"), nullable=True
     )  # {title_template, priority, due_in_hours}
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

@@ -35,6 +35,7 @@ async def list_by_entity(
     session: AsyncSession,
     entity_type: str,
     entity_id: UUID,
+    user_id: Optional[UUID] = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Activity], int]:
@@ -43,6 +44,9 @@ async def list_by_entity(
         .where(Activity.entity_type == entity_type, Activity.entity_id == entity_id)
         .order_by(Activity.created_at.desc())
     )
+    # ── Data isolation: only show activities produced by this user ──
+    if user_id is not None:
+        q = q.where(Activity.user_id == user_id)
     return await paginate(session, q, page, page_size)
 
 
@@ -57,7 +61,8 @@ async def list_global(
     page_size: int = 20,
 ) -> tuple[list[Activity], int]:
     q = select(Activity).order_by(Activity.created_at.desc())
-    if user_id:
+    # ── Data isolation: always filter by user ──
+    if user_id is not None:
         q = q.where(Activity.user_id == user_id)
     if entity_type:
         q = q.where(Activity.entity_type == entity_type)

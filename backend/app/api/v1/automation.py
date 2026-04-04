@@ -21,7 +21,7 @@ async def list_rules(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ):
-    items, total = await automation_service.list_rules(db, page=page, page_size=page_size)
+    items, total = await automation_service.list_rules(db, user_id=current_user.id, page=page, page_size=page_size)
     pages = (total + page_size - 1) // page_size if page_size else 0
     return APIResponse(
         data={
@@ -56,7 +56,7 @@ async def update_rule(
     db: DBSession,
     current_user: CurrentUser,
 ):
-    rule = await automation_service.update_rule(db, rule_id, data)
+    rule = await automation_service.update_rule(db, rule_id, data, user_id=current_user.id)
     if not rule:
         raise NotFoundError("Automation rule not found")
     return APIResponse(
@@ -72,7 +72,7 @@ async def delete_rule(
     db: DBSession,
     current_user: CurrentUser,
 ):
-    ok = await automation_service.delete_rule(db, rule_id)
+    ok = await automation_service.delete_rule(db, rule_id, user_id=current_user.id)
     if not ok:
         raise NotFoundError("Automation rule not found")
     return APIResponse(message="Automation rule deleted", success=True)

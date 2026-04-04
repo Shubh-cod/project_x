@@ -29,6 +29,7 @@ async def create(
         probability=data.probability,
         assigned_to=data.assigned_to,
         notes=data.notes,
+        owner_id=user_id,
     )
     session.add(deal)
     await session.flush()
@@ -39,13 +40,17 @@ async def create(
     return deal
 
 
-async def get_by_id(session: AsyncSession, deal_id: UUID) -> Deal | None:
-    result = await session.execute(select(Deal).where(Deal.id == deal_id))
+async def get_by_id(session: AsyncSession, deal_id: UUID, user_id: Optional[UUID] = None) -> Deal | None:
+    q = select(Deal).where(Deal.id == deal_id)
+    if user_id is not None:
+        q = q.where(Deal.owner_id == user_id)
+    result = await session.execute(q)
     return result.scalar_one_or_none()
 
 
 async def list_deals(
     session: AsyncSession,
+    user_id: Optional[UUID] = None,
     stage: Optional[str] = None,
     assigned_to: Optional[UUID] = None,
     contact_id: Optional[UUID] = None,
@@ -53,6 +58,9 @@ async def list_deals(
     page_size: int = 20,
 ) -> tuple[list[Deal], int]:
     q = select(Deal).order_by(Deal.updated_at.desc())
+    # ── Data isolation: always filter by owner ──
+    if user_id is not None:
+        q = q.where(Deal.owner_id == user_id)
     if stage:
         q = q.where(Deal.stage == stage)
     if assigned_to:
@@ -68,7 +76,7 @@ async def update(
     data: DealUpdate,
     user_id: Optional[UUID] = None,
 ) -> Deal | None:
-    deal = await get_by_id(session, deal_id)
+    deal = await get_by_id(session, deal_id, user_id=user_id)
     if not deal:
         return None
     old_stage = deal.stage
@@ -126,12 +134,14 @@ async def update(
     return deal
 
 
-async def pipeline_by_stage(session: AsyncSession) -> list[dict]:
-    """Group deals by stage with count and total value."""
+async def pipeline_by_stage(session: AsyncSession, user_id: Optional[UUID] = None) -> list[dict]:
+    """Group deals by stage with count and total value — scoped to owner."""
     q = (
         select(Deal.stage, func.count(Deal.id).label("count"), func.coalesce(func.sum(Deal.value), 0).label("total_value"))
-        .group_by(Deal.stage)
     )
+    if user_id is not None:
+        q = q.where(Deal.owner_id == user_id)
+    q = q.group_by(Deal.stage)
     result = await session.execute(q)
     rows = result.all()
     return [{"stage": r.stage, "count": r.count, "total_value": float(r.total_value)} for r in rows]

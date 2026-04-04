@@ -23,13 +23,13 @@ async def list_by_contact(
     current_user: CurrentUser,
     limit: int = 50,
 ):
-    logs = await email_log_service.list_by_contact(db, contact_id, limit=limit)
+    logs = await email_log_service.list_by_contact(db, contact_id, user_id=current_user.id, limit=limit)
     return APIResponse(data=[EmailLogResponse.model_validate(l) for l in logs], success=True)
 
 
 @router.get("/{log_id}", response_model=APIResponse)
 async def get_email_log(log_id: UUID, db: DBSession, current_user: CurrentUser):
-    log_entry = await email_log_service.get_by_id(db, log_id)
+    log_entry = await email_log_service.get_by_id(db, log_id, user_id=current_user.id)
     if not log_entry:
         raise NotFoundError("Email log not found")
     return APIResponse(data=EmailLogResponse.model_validate(log_entry), success=True)

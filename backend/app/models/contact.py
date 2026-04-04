@@ -20,6 +20,11 @@ class Contact(BaseModel):
     source: Mapped[str | None] = mapped_column(String(50), nullable=True)  # web, referral, etc.
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

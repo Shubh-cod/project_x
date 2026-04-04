@@ -1,7 +1,7 @@
-"""User management routes (admin)."""
+"""User management routes (all users = admin for now)."""
 from uuid import UUID
 from fastapi import APIRouter, Depends
-from app.dependencies import DBSession, AdminUser
+from app.dependencies import DBSession, CurrentUser
 from app.schemas.user import UserResponse, UserUpdate
 from app.schemas.common import APIResponse
 from app.utils.exceptions import NotFoundError
@@ -12,14 +12,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("", response_model=APIResponse)
-async def list_users(db: DBSession, current_user: AdminUser):
+async def list_users(db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(User).order_by(User.email))
     users = result.scalars().all()
     return APIResponse(data=[UserResponse.model_validate(u) for u in users], success=True)
 
 
 @router.get("/{user_id}", response_model=APIResponse)
-async def get_user(user_id: UUID, db: DBSession, current_user: AdminUser):
+async def get_user(user_id: UUID, db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -28,7 +28,7 @@ async def get_user(user_id: UUID, db: DBSession, current_user: AdminUser):
 
 
 @router.patch("/{user_id}", response_model=APIResponse)
-async def update_user(user_id: UUID, data: UserUpdate, db: DBSession, current_user: AdminUser):
+async def update_user(user_id: UUID, data: UserUpdate, db: DBSession, current_user: CurrentUser):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:

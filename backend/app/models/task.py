@@ -20,6 +20,11 @@ class Task(BaseModel):
     # Polymorphic link: linked_to_type in (contact, lead, deal), linked_to_id = UUID
     linked_to_type: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     linked_to_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

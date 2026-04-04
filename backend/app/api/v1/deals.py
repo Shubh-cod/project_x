@@ -26,7 +26,10 @@ async def list_deals(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
-    items, total = await deal_service.list_deals(db, stage=stage, assigned_to=assigned_to, contact_id=contact_id, page=page, page_size=page_size)
+    items, total = await deal_service.list_deals(
+        db, user_id=current_user.id, stage=stage, assigned_to=assigned_to,
+        contact_id=contact_id, page=page, page_size=page_size,
+    )
     pages = (total + page_size - 1) // page_size if page_size else 0
     return APIResponse(
         data={
@@ -42,13 +45,13 @@ async def list_deals(
 
 @router.get("/pipeline", response_model=APIResponse)
 async def pipeline(db: DBSession, current_user: CurrentUser):
-    stages = await deal_service.pipeline_by_stage(db)
+    stages = await deal_service.pipeline_by_stage(db, user_id=current_user.id)
     return APIResponse(data={"stages": stages}, success=True)
 
 
 @router.get("/{deal_id}", response_model=APIResponse)
 async def get_deal(deal_id: UUID, db: DBSession, current_user: CurrentUser):
-    deal = await deal_service.get_by_id(db, deal_id)
+    deal = await deal_service.get_by_id(db, deal_id, user_id=current_user.id)
     if not deal:
         raise NotFoundError("Deal not found")
     return APIResponse(data=DealResponse.model_validate(deal), success=True)
