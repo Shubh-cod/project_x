@@ -1,6 +1,6 @@
 from datetime import datetime
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
 from app.dependencies import DBSession, CurrentUser
 from app.schemas.contact import ContactCreate, ContactUpdate, ContactResponse, ContactListFilters
 from app.schemas.common import APIResponse, PaginatedResponse
@@ -102,3 +102,29 @@ async def delete_contact(
     if not ok:
         raise NotFoundError("Contact not found")
     return APIResponse(message="Contact deleted", success=True)
+
+
+@router.post("/import-csv", response_model=APIResponse)
+async def import_contacts_csv(
+    db: DBSession,
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+):
+    # Security: Limit file size to 5MB
+    MAX_SIZE = 5 * 1024 * 1024
+    if file.size and file.size > MAX_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 5MB.")
+    
+    if not file.filename or not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a CSV file.")
+    
+    content = await file.read()
+    try:
+        results = await contact_service.import_contacts(db, content, current_user.id)
+        return APIResponse(
+            data=results,
+            message=f"Import completed: {results['success_count']} success, {results['failed_count']} failed",
+            success=True
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

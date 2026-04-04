@@ -4,18 +4,20 @@ import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Mail, Phone, Trash2, Users } from "lucide-react";
+import { Plus, Search, Mail, Phone, Trash2, Users, Upload } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { contactsApi } from "@/api/contacts.api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ContactDialog } from "@/components/dialogs/ContactDialog";
 import { DeleteContactDialog } from "@/components/dialogs/DeleteContactDialog";
+import { ImportCSVDialog } from "@/components/dialogs/ImportCSVDialog";
 
 export default function ContactsPage() {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<any>(null);
   const [contactToDelete, setContactToDelete] = useState<any>(null);
@@ -75,10 +77,16 @@ export default function ContactsPage() {
           <h1 className="text-2xl font-display font-bold text-foreground">Contacts</h1>
           <p className="text-sm text-muted-foreground mt-1">{total} total contacts</p>
         </div>
-        <Button onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Contact
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Button onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Contact
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-sm mb-4">
@@ -169,6 +177,8 @@ export default function ContactsPage() {
 
       <ContactDialog open={dialogOpen} onOpenChange={setDialogOpen} contact={editingContact} />
       
+      <ImportCSVDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
+
       <DeleteContactDialog 
         open={deleteDialogOpen} 
         onOpenChange={setDeleteDialogOpen}

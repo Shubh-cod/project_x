@@ -1,5 +1,4 @@
 """FastAPI app init, middleware, router inclusion."""
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,11 +9,12 @@ from app.api.v1.router import api_router
 from app.utils.exceptions import exception_response
 from app.db.base import engine, AsyncSessionLocal
 from app.redis.client import close_redis
+from app.utils.logging import setup_logging, logger
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("novacrm")
+# Initialize global logging config
+setup_logging()
 
 settings = get_settings()
 

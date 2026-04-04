@@ -24,4 +24,18 @@ export const contactsApi = {
     const qs = deleteAssociated ? "?delete_associated=true" : "";
     return client.request(`/contacts/${id}${qs}`, { method: "DELETE" });
   },
+
+  importCSV: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return client.request<{
+      total_rows: number;
+      success_count: number;
+      failed_count: number;
+      errors: { row: number; error: string }[];
+    }>("/contacts/import-csv", {
+      method: "POST",
+      body: formData,
+    });
+  },
 };

@@ -1,10 +1,8 @@
 """Request/response logging middleware."""
 import time
-import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-
-logger = logging.getLogger("novacrm")
+from app.utils.logging import logger
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
