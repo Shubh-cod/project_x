@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { dealsApi } from "@/api/deals.api";
 import { ContactPicker } from "@/components/ContactPicker";
 import type { Deal } from "@/api/types";
@@ -108,7 +109,7 @@ export function DealDialog({ open, onOpenChange, deal }: DealDialogProps) {
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Close Date</label>
-            <Input type="date" value={form.close_date} onChange={(e) => update("close_date", e.target.value)} />
+            <DatePicker value={form.close_date} onChange={(date) => update("close_date", date || "")} />
           </div>
           {mutation.error && (
             <p className="text-sm text-destructive">{(mutation.error as Error).message}</p>

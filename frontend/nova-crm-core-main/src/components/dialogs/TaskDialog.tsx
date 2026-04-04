@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { tasksApi } from "@/api/tasks.api";
 import { ContactPicker } from "@/components/ContactPicker";
 import type { Task } from "@/api/types";
@@ -110,7 +111,7 @@ export function TaskDialog({ open, onOpenChange, task }: TaskDialogProps) {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Due Date</label>
-              <Input type="date" value={form.due_date} onChange={(e) => update("due_date", e.target.value)} />
+              <DatePicker value={form.due_date} onChange={(date) => update("due_date", date || "")} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
