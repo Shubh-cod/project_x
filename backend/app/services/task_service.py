@@ -39,7 +39,7 @@ async def create(
 
 
 async def get_by_id(session: AsyncSession, task_id: UUID, user_id: Optional[UUID] = None) -> Task | None:
-    q = select(Task).where(Task.id == task_id)
+    q = select(Task).where(and_(Task.id == task_id, Task.is_deleted == False))
     if user_id is not None:
         q = q.where(Task.owner_id == user_id)
     result = await session.execute(q)
@@ -56,7 +56,11 @@ async def list_tasks(
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Task], int]:
-    q = select(Task).order_by(Task.due_date.asc().nullslast(), Task.created_at.desc())
+    q = (
+        select(Task)
+        .where(Task.is_deleted == False)
+        .order_by(Task.due_date.asc().nullslast(), Task.created_at.desc())
+    )
     # ── Data isolation: always filter by owner ──
     if user_id is not None:
         q = q.where(Task.owner_id == user_id)
@@ -75,7 +79,7 @@ async def overdue_tasks(session: AsyncSession, user_id: Optional[UUID] = None, a
     now = datetime.now(timezone.utc)
     q = (
         select(Task)
-        .where(and_(Task.due_date < now, Task.status != TaskStatus.DONE.value))
+        .where(and_(Task.due_date < now, Task.status != TaskStatus.DONE.value, Task.is_deleted == False))
         .order_by(Task.due_date.asc())
     )
     # ── Data isolation: always filter by owner ──

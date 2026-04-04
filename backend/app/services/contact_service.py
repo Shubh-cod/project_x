@@ -121,11 +121,46 @@ async def update(
     return contact
 
 
-async def soft_delete(session: AsyncSession, contact_id: UUID, user_id: Optional[UUID] = None) -> bool:
+async def soft_delete(
+    session: AsyncSession,
+    contact_id: UUID,
+    user_id: Optional[UUID] = None,
+    delete_associated: bool = False,
+) -> bool:
     contact = await get_by_id(session, contact_id, user_id=user_id)
     if not contact:
         return False
     contact.is_deleted = True
+
+    if delete_associated:
+        from sqlalchemy import update
+        from app.models.lead import Lead
+        from app.models.deal import Deal
+        from app.models.task import Task
+
+        # Cascade to Leads
+        await session.execute(
+            update(Lead)
+            .where(and_(Lead.contact_id == contact_id, Lead.is_deleted == False))
+            .values(is_deleted=True)
+        )
+        # Cascade to Deals
+        await session.execute(
+            update(Deal)
+            .where(and_(Deal.contact_id == contact_id, Deal.is_deleted == False))
+            .values(is_deleted=True)
+        )
+        # Cascade to Tasks (polymorphic link)
+        await session.execute(
+            update(Task)
+            .where(and_(
+                Task.linked_to_id == contact_id,
+                Task.linked_to_type == "contact",
+                Task.is_deleted == False
+            ))
+            .values(is_deleted=True)
+        )
+
     await invalidate_search_cache()
     await invalidate_dashboard_cache(contact.assigned_to)
     await session.flush()

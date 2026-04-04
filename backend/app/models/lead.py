@@ -1,7 +1,7 @@
 """Lead model."""
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, Numeric, ForeignKey, DateTime
+from sqlalchemy import String, Text, Numeric, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base_model import BaseModel
@@ -37,6 +37,7 @@ class Lead(BaseModel):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Pipeline timestamps: when status changed to each stage (stored as JSON or separate columns)
     status_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     contact: Mapped[Contact] = relationship("Contact", back_populates="leads", foreign_keys=[contact_id], lazy="selectin")
     assigned_to_user: Mapped[User | None] = relationship(

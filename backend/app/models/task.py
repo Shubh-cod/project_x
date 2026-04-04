@@ -1,7 +1,7 @@
 """Task model - polymorphic link to contact/lead/deal."""
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, ForeignKey, DateTime
+from sqlalchemy import String, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base_model import BaseModel
@@ -30,6 +30,7 @@ class Task(BaseModel):
         nullable=True,
         index=True,
     )
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     assigned_to_user: Mapped[User | None] = relationship(
         "User",

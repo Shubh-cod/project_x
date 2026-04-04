@@ -41,7 +41,7 @@ async def create(
 
 
 async def get_by_id(session: AsyncSession, deal_id: UUID, user_id: Optional[UUID] = None) -> Deal | None:
-    q = select(Deal).where(Deal.id == deal_id)
+    q = select(Deal).where(and_(Deal.id == deal_id, Deal.is_deleted == False))
     if user_id is not None:
         q = q.where(Deal.owner_id == user_id)
     result = await session.execute(q)
@@ -57,7 +57,7 @@ async def list_deals(
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Deal], int]:
-    q = select(Deal).order_by(Deal.updated_at.desc())
+    q = select(Deal).where(Deal.is_deleted == False).order_by(Deal.updated_at.desc())
     # ── Data isolation: always filter by owner ──
     if user_id is not None:
         q = q.where(Deal.owner_id == user_id)
@@ -138,6 +138,7 @@ async def pipeline_by_stage(session: AsyncSession, user_id: Optional[UUID] = Non
     """Group deals by stage with count and total value — scoped to owner."""
     q = (
         select(Deal.stage, func.count(Deal.id).label("count"), func.coalesce(func.sum(Deal.value), 0).label("total_value"))
+        .where(Deal.is_deleted == False)
     )
     if user_id is not None:
         q = q.where(Deal.owner_id == user_id)

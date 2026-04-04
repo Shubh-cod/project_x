@@ -92,8 +92,13 @@ async def update_contact(
 
 
 @router.delete("/{contact_id}", response_model=APIResponse)
-async def delete_contact(contact_id: UUID, db: DBSession, current_user: CurrentUser):
-    ok = await contact_service.soft_delete(db, contact_id, current_user.id)
+async def delete_contact(
+    contact_id: UUID,
+    db: DBSession,
+    current_user: CurrentUser,
+    delete_associated: bool = Query(False),
+):
+    ok = await contact_service.soft_delete(db, contact_id, current_user.id, delete_associated)
     if not ok:
         raise NotFoundError("Contact not found")
     return APIResponse(message="Contact deleted", success=True)

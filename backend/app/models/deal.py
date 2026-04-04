@@ -1,7 +1,7 @@
 """Deal / Opportunity model."""
 import uuid
 from datetime import date, datetime
-from sqlalchemy import String, Text, Numeric, ForeignKey, DateTime
+from sqlalchemy import String, Text, Numeric, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base_model import BaseModel
@@ -42,6 +42,7 @@ class Deal(BaseModel):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     won_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     lost_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     contact: Mapped[Contact] = relationship("Contact", back_populates="deals", foreign_keys=[contact_id], lazy="selectin")
     lead: Mapped[Lead | None] = relationship("Lead", back_populates="deals", foreign_keys=[lead_id], lazy="selectin")

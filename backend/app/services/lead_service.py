@@ -63,7 +63,11 @@ async def create(
 
 
 async def get_by_id(session: AsyncSession, lead_id: UUID, user_id: Optional[UUID] = None) -> Lead | None:
-    q = select(Lead).where(Lead.id == lead_id).options(selectinload(Lead.tags))
+    q = (
+        select(Lead)
+        .where(and_(Lead.id == lead_id, Lead.is_deleted == False))
+        .options(selectinload(Lead.tags))
+    )
     if user_id is not None:
         q = q.where(Lead.owner_id == user_id)
     result = await session.execute(q)
@@ -82,7 +86,12 @@ async def list_leads(
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Lead], int]:
-    q = select(Lead).options(selectinload(Lead.tags)).order_by(Lead.created_at.desc())
+    q = (
+        select(Lead)
+        .where(Lead.is_deleted == False)
+        .options(selectinload(Lead.tags))
+        .order_by(Lead.created_at.desc())
+    )
     # ── Data isolation: always filter by owner ──
     if user_id is not None:
         q = q.where(Lead.owner_id == user_id)
