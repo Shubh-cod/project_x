@@ -120,3 +120,17 @@ async def update(
     await invalidate_dashboard_cache(task.assigned_to)
     await session.refresh(task)
     return task
+
+
+async def soft_delete(
+    session: AsyncSession,
+    task_id: UUID,
+    user_id: Optional[UUID] = None,
+) -> bool:
+    task = await get_by_id(session, task_id, user_id=user_id)
+    if not task:
+        return False
+    task.is_deleted = True
+    await invalidate_dashboard_cache(task.assigned_to)
+    await session.flush()
+    return True

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { activitiesApi } from "@/api/activities.api";
 import {
   Activity as ActivityIcon,
@@ -98,7 +99,10 @@ export function EntityTimeline({ entityType, entityId, limit = 50 }: EntityTimel
     if (a.action === "status_changed" && a.metadata?.old && a.metadata?.new) {
       return (
         <span>
-          Changed status from <span className="font-medium badge variant-secondary">{a.metadata.old}</span> to <span className="font-medium badge variant-secondary">{a.metadata.new}</span>
+          Changed status from{" "}
+          <Badge variant="secondary" className="text-xs capitalize mx-0.5">{a.metadata.old}</Badge>
+          to{" "}
+          <Badge variant="secondary" className="text-xs capitalize mx-0.5">{a.metadata.new}</Badge>
         </span>
       );
     }

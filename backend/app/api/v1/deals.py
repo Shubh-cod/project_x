@@ -68,3 +68,11 @@ async def update_deal(
     if not deal:
         raise NotFoundError("Deal not found")
     return APIResponse(data=DealResponse.model_validate(deal), message="Deal updated", success=True)
+
+
+@router.delete("/{deal_id}", response_model=APIResponse)
+async def delete_deal(deal_id: UUID, db: DBSession, current_user: CurrentUser):
+    deleted = await deal_service.soft_delete(db, deal_id, current_user.id)
+    if not deleted:
+        raise NotFoundError("Deal not found")
+    return APIResponse(message="Deal deleted", success=True)

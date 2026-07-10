@@ -1,9 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Plus, Search, Mail, Phone, Trash2, Users, Upload } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +16,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { ContactDialog } from "@/components/dialogs/ContactDialog";
 import { DeleteContactDialog } from "@/components/dialogs/DeleteContactDialog";
 import { ImportCSVDialog } from "@/components/dialogs/ImportCSVDialog";
+import { getInitials } from "@/lib/utils";
 
 export default function ContactsPage() {
   const [search, setSearch] = useState("");
@@ -30,41 +35,17 @@ export default function ContactsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, deleteAssociated }: { id: string; deleteAssociated: boolean }) => 
+    mutationFn: ({ id, deleteAssociated }: { id: string; deleteAssociated: boolean }) =>
       contactsApi.delete(id, deleteAssociated),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success("Contact deleted");
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to delete contact");
-    },
+    onError: (error) => toast.error(error.message || "Failed to delete contact"),
   });
 
   if (isLoading) {
-    return (
-      <AppLayout>
-        <div className="mb-6">
-          <div className="h-7 w-32 bg-secondary rounded animate-pulse" />
-          <div className="h-4 w-48 bg-secondary/60 rounded animate-pulse mt-2" />
-        </div>
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <div className="border-b border-border bg-secondary/50 px-5 py-3 flex gap-8">
-            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-3 w-16 bg-secondary rounded animate-pulse" />)}
-          </div>
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="px-5 py-4 border-b border-border flex items-center gap-4 animate-pulse">
-              <div className="h-8 w-8 rounded-full bg-secondary" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-36 bg-secondary rounded" />
-                <div className="h-3 w-24 bg-secondary/60 rounded" />
-              </div>
-              <div className="h-3 w-20 bg-secondary/60 rounded" />
-            </div>
-          ))}
-        </div>
-      </AppLayout>
-    );
+    return <AppLayout><PageSkeleton /></AppLayout>;
   }
 
   const contacts = data?.items || [];
@@ -72,115 +53,119 @@ export default function ContactsPage() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Contacts</h1>
-          <p className="text-sm text-muted-foreground mt-1">{total} total contacts</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-          <Button onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Contact
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Contacts"
+        description={`${total.toLocaleString()} contacts in your workspace`}
+        action={
+          <>
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />Import
+            </Button>
+            <Button onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />Add Contact
+            </Button>
+          </>
+        }
+      />
 
-      <div className="relative max-w-sm mb-4">
+      <div className="relative max-w-sm mb-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search contacts..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input
+          placeholder="Search by name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 h-9"
+        />
       </div>
 
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border bg-secondary/50">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contact</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tags</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added</th>
-              <th className="px-5 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {contacts.map((c) => (
-              <tr key={c.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => navigate(`/contacts/${c.id}`)}>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-                      {c.name.split(" ").map((n) => n[0]).join("")}
-                    </div>
-                    <span className="text-sm font-medium text-foreground">{c.name}</span>
-                  </div>
-                </td>
-                <td className="px-5 py-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Mail className="h-3 w-3" />{c.email}
-                    </div>
-                    {c.phone && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Phone className="h-3 w-3" />{c.phone}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-5 py-3 text-sm text-foreground">{c.company || "-"}</td>
-                <td className="px-5 py-3">
-                  <div className="flex gap-1 flex-wrap">
-                    {c.tags?.map((t) => (
-                      <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-5 py-3 text-xs text-muted-foreground">
-                  {new Date(c.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-5 py-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      setContactToDelete(c);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {contacts.length === 0 && (
+      <div className="data-card overflow-hidden">
+        {contacts.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title={search ? "No contacts found" : "No contacts yet"}
+            description={search ? "Try adjusting your search terms." : "Add your first contact to start building relationships."}
+            action={
+              !search && (
+                <Button size="sm" onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-2" />Add Contact
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan={6} className="px-5 py-16 text-center">
-                  <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
-                  <p className="text-sm font-semibold text-foreground">No contacts found</p>
-                  <p className="text-sm text-muted-foreground mt-1 mb-4">
-                    {search ? "Try adjusting your search terms." : "Add your first contact to get started."}
-                  </p>
-                  {!search && (
-                    <Button size="sm" onClick={() => { setEditingContact(null); setDialogOpen(true); }}>
-                      <Plus className="h-4 w-4 mr-2" />Add Contact
-                    </Button>
-                  )}
-                </td>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Company</th>
+                <th>Tags</th>
+                <th>Added</th>
+                <th></th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {contacts.map((c) => (
+                <tr key={c.id} className="cursor-pointer" onClick={() => navigate(`/contacts/${c.id}`)}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                          {getInitials(c.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{c.name}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Mail className="h-3 w-3 shrink-0" />{c.email}
+                      </div>
+                      {c.phone && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3 shrink-0" />{c.phone}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="text-foreground">{c.company || "—"}</td>
+                  <td>
+                    <div className="flex gap-1 flex-wrap">
+                      {c.tags?.map((t) => (
+                        <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="text-xs text-muted-foreground tabular-nums">
+                    {new Date(c.created_at).toLocaleDateString()}
+                  </td>
+                  <td>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setContactToDelete(c);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <ContactDialog open={dialogOpen} onOpenChange={setDialogOpen} contact={editingContact} />
-      
       <ImportCSVDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
-
-      <DeleteContactDialog 
-        open={deleteDialogOpen} 
+      <DeleteContactDialog
+        open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         contactName={contactToDelete?.name}
         onConfirm={(deleteAssociated) => {

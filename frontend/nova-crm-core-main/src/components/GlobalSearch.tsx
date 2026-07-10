@@ -1,9 +1,21 @@
 import { useState, useRef, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, Users, Target, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { searchApi } from "@/api/search.api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useNavigate } from "react-router-dom";
+
+const TYPE_ICONS = {
+  contact: Users,
+  lead: Target,
+  deal: DollarSign,
+};
+
+const TYPE_ROUTES: Record<string, (id: string) => string> = {
+  contact: (id) => `/contacts/${id}`,
+  lead: (id) => `/leads/${id}`,
+  deal: (id) => `/deals/${id}`,
+};
 
 export function GlobalSearch() {
   const [query, setQuery] = useState("");
@@ -44,9 +56,8 @@ export function GlobalSearch() {
   const handleSelect = (type: string, id: string) => {
     setOpen(false);
     setQuery("");
-    if (type === "contact") navigate("/contacts");
-    else if (type === "lead") navigate("/leads");
-    else if (type === "deal") navigate("/deals");
+    const route = TYPE_ROUTES[type]?.(id);
+    if (route) navigate(route);
   };
 
   const allResults = [
@@ -56,41 +67,44 @@ export function GlobalSearch() {
   ];
 
   return (
-    <div className="relative w-full max-w-md" ref={ref}>
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="relative flex-1 max-w-md" ref={ref}>
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
       <Input
         placeholder="Search contacts, leads, deals..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results && setOpen(true)}
-        className="pl-9 bg-secondary border-none h-9 text-sm"
+        className="pl-9 h-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-input text-sm"
       />
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
           {loading && (
             <div className="px-4 py-3 text-sm text-muted-foreground">Searching...</div>
           )}
           {!loading && allResults.length === 0 && (
-            <div className="px-4 py-3 text-sm text-muted-foreground">No results found</div>
+            <div className="px-4 py-3 text-sm text-muted-foreground">No results for "{debouncedQuery}"</div>
           )}
           {!loading &&
-            allResults.map((item: any) => (
-              <button
-                key={`${item.type}-${item.id}`}
-                onClick={() => handleSelect(item.type, item.id)}
-                className="w-full text-left px-4 py-2.5 hover:bg-secondary/50 transition-colors flex items-center gap-3"
-              >
-                <span className="text-xs font-semibold uppercase text-muted-foreground w-16">
-                  {item.type}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.title}</p>
-                  {item.subtitle && (
-                    <p className="text-xs text-muted-foreground">{item.subtitle}</p>
-                  )}
-                </div>
-              </button>
-            ))}
+            allResults.map((item: any) => {
+              const Icon = TYPE_ICONS[item.type as keyof typeof TYPE_ICONS] || Search;
+              return (
+                <button
+                  key={`${item.type}-${item.id}`}
+                  onClick={() => handleSelect(item.type, item.id)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-muted/60 transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl"
+                >
+                  <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground capitalize truncate">
+                      {item.type}{item.subtitle ? ` · ${item.subtitle}` : ""}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
         </div>
       )}
     </div>

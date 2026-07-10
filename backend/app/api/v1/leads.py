@@ -94,6 +94,14 @@ async def update_lead(
     return APIResponse(data=_lead_to_response(lead), message="Lead updated", success=True)
 
 
+@router.delete("/{lead_id}", response_model=APIResponse)
+async def delete_lead(lead_id: UUID, db: DBSession, current_user: CurrentUser):
+    deleted = await lead_service.soft_delete(db, lead_id, current_user.id)
+    if not deleted:
+        raise NotFoundError("Lead not found")
+    return APIResponse(message="Lead deleted", success=True)
+
+
 @router.post("/{lead_id}/convert", response_model=APIResponse)
 async def convert_lead(
     lead_id: UUID,

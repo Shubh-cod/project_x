@@ -1,32 +1,26 @@
-import { AppSidebar } from "./AppSidebar";
 import { GlobalSearch } from "./GlobalSearch";
-import { useAuth } from "@/contexts/AuthContext";
+import { AppSidebar } from "./AppSidebar";
+import { ThemeToggle } from "./ThemeToggle";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const initials = user?.full_name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() || "U";
-
   return (
-    <div className="min-h-screen bg-background">
+    <SidebarProvider>
       <AppSidebar />
-      <div className="ml-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-sm border-b border-border px-6 py-3 flex items-center justify-between">
+      <SidebarInset>
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-border glass px-4 lg:px-6">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="h-5" />
           <GlobalSearch />
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
-              {initials}
-            </div>
-            {user && <span className="text-sm text-muted-foreground">{user.full_name}</span>}
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
           </div>
         </header>
-        {/* Content */}
-        <main className="p-6 animate-fade-in">{children}</main>
-      </div>
-    </div>
+        <main className="flex-1 p-4 lg:p-6 animate-fade-in">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

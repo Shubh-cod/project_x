@@ -146,6 +146,21 @@ async def update(
     return deal
 
 
+async def soft_delete(
+    session: AsyncSession,
+    deal_id: UUID,
+    user_id: Optional[UUID] = None,
+) -> bool:
+    deal = await get_by_id(session, deal_id, user_id=user_id)
+    if not deal:
+        return False
+    deal.is_deleted = True
+    await activity_log(session, "deal", deal.id, "deleted", user_id, {"entity_name": deal.title})
+    await invalidate_dashboard_cache(deal.assigned_to)
+    await session.flush()
+    return True
+
+
 async def pipeline_by_stage(session: AsyncSession, user_id: Optional[UUID] = None) -> list[dict]:
     """Group deals by stage with count and total value — scoped to owner."""
     q = (

@@ -68,45 +68,52 @@ async def get_pipeline_by_stage(session: AsyncSession, user_id: UUID) -> list[di
     ]
 
 
-async def get_agent_performance(session: AsyncSession, user_id: UUID, last_n_days: int = 30) -> list[dict]:
-    """Show only the requesting user's own performance."""
+async def get_agent_performance(
+    session: AsyncSession,
+    user_id: UUID,
+    role: UserRole,
+    last_n_days: int = 30,
+) -> list[dict]:
+    """Return team performance for managers/admins, or own stats for agents."""
     since = datetime.now(timezone.utc) - timedelta(days=last_n_days)
-    # Deals won by this user
-    deals_won_q = (
-        select(func.count(Deal.id).label("deals_won"))
-        .where(and_(
-            Deal.stage == "won",
-            Deal.updated_at >= since,
-            Deal.owner_id == user_id,
-        ))
-    )
-    # Leads contacted (status != new) by this user
-    leads_contacted_q = (
-        select(func.count(Lead.id).label("leads_contacted"))
-        .where(and_(
-            Lead.status != "new",
-            Lead.updated_at >= since,
-            Lead.owner_id == user_id,
-        ))
-    )
-    dw_result = await session.execute(deals_won_q)
-    lc_result = await session.execute(leads_contacted_q)
-    deals_won = dw_result.scalar_one() or 0
-    leads_contacted = lc_result.scalar_one() or 0
 
-    # Fetch user info
-    user_q = select(User).where(User.id == user_id)
-    user_result = await session.execute(user_q)
-    user = user_result.scalar_one_or_none()
+    if role in (UserRole.admin, UserRole.manager):
+        users_q = select(User).where(User.is_active == True)
+        users_result = await session.execute(users_q)
+        users = list(users_result.scalars().all())
+    else:
+        user_q = select(User).where(User.id == user_id)
+        user_result = await session.execute(user_q)
+        user = user_result.scalar_one_or_none()
+        users = [user] if user else []
 
-    return [
-        {
-            "user_id": str(user_id),
-            "full_name": user.full_name if user else "Unknown",
-            "deals_won": deals_won,
-            "leads_contacted": leads_contacted,
-        }
-    ]
+    performance = []
+    for user in users:
+        dw_result = await session.execute(
+            select(func.count(Deal.id)).where(and_(
+                Deal.stage == "won",
+                Deal.updated_at >= since,
+                Deal.owner_id == user.id,
+                Deal.is_deleted == False,
+            ))
+        )
+        lc_result = await session.execute(
+            select(func.count(Lead.id)).where(and_(
+                Lead.status != "new",
+                Lead.updated_at >= since,
+                Lead.owner_id == user.id,
+                Lead.is_deleted == False,
+            ))
+        )
+        performance.append({
+            "user_id": str(user.id),
+            "full_name": user.full_name,
+            "deals_won": dw_result.scalar_one() or 0,
+            "leads_contacted": lc_result.scalar_one() or 0,
+        })
+
+    performance.sort(key=lambda x: x["deals_won"], reverse=True)
+    return performance
 
 
 async def get_dashboard(session: AsyncSession, user_id: UUID, role: UserRole) -> dict:
@@ -116,7 +123,7 @@ async def get_dashboard(session: AsyncSession, user_id: UUID, role: UserRole) ->
         return cached
     summary = await get_summary_stats(session, user_id)
     pipeline = await get_pipeline_by_stage(session, user_id)
-    agents = await get_agent_performance(session, user_id)
+    agents = await get_agent_performance(session, user_id, role)
     data = {
         "summary": summary,
         "pipeline_by_stage": pipeline,

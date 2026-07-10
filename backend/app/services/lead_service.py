@@ -162,6 +162,21 @@ async def update(
     return lead
 
 
+async def soft_delete(
+    session: AsyncSession,
+    lead_id: UUID,
+    user_id: Optional[UUID] = None,
+) -> bool:
+    lead = await get_by_id(session, lead_id, user_id=user_id)
+    if not lead:
+        return False
+    lead.is_deleted = True
+    await activity_log(session, "lead", lead.id, "deleted", user_id, {"entity_name": lead.title})
+    await invalidate_dashboard_cache(lead.assigned_to)
+    await session.flush()
+    return True
+
+
 async def convert_to_contact_and_deal(
     session: AsyncSession,
     lead_id: UUID,
@@ -176,6 +191,9 @@ async def convert_to_contact_and_deal(
     contact = await get_contact_by_id(session, lead.contact_id, user_id=user_id)
     if not contact:
         raise NotFoundError("Contact not found")
+    lead.status = "qualified"
+    from datetime import datetime, timezone
+    lead.status_changed_at = datetime.now(timezone.utc)
     deal = None
     if create_deal and deal_title:
         deal = Deal(

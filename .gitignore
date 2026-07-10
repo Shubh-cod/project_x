@@ -12,6 +12,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/nova-crm-core-main/src/lib/
 lib64/
 parts/
 sdist/

@@ -75,3 +75,11 @@ async def update_task(
     if not task:
         raise NotFoundError("Task not found")
     return APIResponse(data=TaskResponse.model_validate(task), message="Task updated", success=True)
+
+
+@router.delete("/{task_id}", response_model=APIResponse)
+async def delete_task(task_id: UUID, db: DBSession, current_user: CurrentUser):
+    deleted = await task_service.soft_delete(db, task_id, current_user.id)
+    if not deleted:
+        raise NotFoundError("Task not found")
+    return APIResponse(message="Task deleted", success=True)
